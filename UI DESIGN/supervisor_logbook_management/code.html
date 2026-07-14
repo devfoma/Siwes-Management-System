@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Logbook Review | SIWES Connect</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=JetBrains+Mono:wght@700&family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&family=JetBrains+Mono:wght@100..900&display=swap" rel="stylesheet"/>
+<style>.material-symbols-outlined {
+    font-variation-settings: "FILL" 0, "wght" 400, "GRAD" 0, "opsz" 24
+    }
+.glass-panel {
+    background: rgba(27, 33, 29, 0.7);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px)
+    }
+.skeuo-card {
+    background: linear-gradient(180deg, #1b211d 0%, #0f1511 100%);
+    box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.05), 0 4px 6px -1px rgba(0, 0, 0, 0.5), 0 10px 15px -3px rgba(0, 0, 0, 0.3)
+    }
+.skeuo-button {
+    background: linear-gradient(180deg, #198754 0%, #0f5132 100%);
+    box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.2), 0 3px 0 0 #082d1c;
+    transition: all 0.1s ease
+    }
+.skeuo-button:active {
+    transform: translatey(2px);
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3), 0 1px 0 0 #082d1c
+    }
+.skeuo-input {
+    background: #0a0e0b;
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.5);
+    border: 1px solid #303632
+    }
+.skeuo-input:focus {
+    outline: none;
+    border-color: #fabd00;
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.5), 0 0 8px rgba(250, 189, 0, 0.3)
+    }
+.grooved-separator {
+    border-top: 1px solid #0a0e0b;
+    border-bottom: 1px solid #303632
+    }
+.noise-texture {
+    position: relative
+    }
+.noise-texture::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    opacity: 0.03;
+    pointer-events: none;
+    background-image: url(https://lh3.googleusercontent.com/aida-public/AB6AXuBAphEhRVNZ0gxHyTFPb99MNSPh-bGqc8PruSZCyazvKO6N90HO4s-QBAW2gx3wKWYuUbR6EynW8SsY2ImftpCgwEhYrwIZRs-1f1LzWSc_58H2JDwCIlzD-puYSJ1ZYFob0s3JfHlCxvNHlCHRg3PlDEzz7_S3AB_AzqejTXy2yLjxl7AFc2MCYmJxfHKcyrD9yHnzMRzw3zbTDy0TjnkxTWEn2064tMnLeEqXf0q5PKevWUmvWdF0VJ4fnnoery5OAEUZoXkKiWQ)
+    }</style>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-primary-fixed": "#002111",
+                        "secondary": "#77da9f",
+                        "primary-fixed": "#b0f1c7",
+                        "primary-fixed-dim": "#95d4ac",
+                        "secondary-container": "#007b49",
+                        "tertiary-fixed-dim": "#fabd00",
+                        "on-primary": "#003920",
+                        "surface-container-highest": "#303632",
+                        "primary-container": "#0f5132",
+                        "surface-container-lowest": "#0a100c",
+                        "on-error": "#690005",
+                        "outline-variant": "#404942",
+                        "inverse-primary": "#2d6a48",
+                        "surface-container-high": "#252b27",
+                        "on-tertiary-container": "#e4ac00",
+                        "surface-container": "#1b211d",
+                        "secondary-fixed": "#93f7ba",
+                        "tertiary": "#fabd00",
+                        "surface-bright": "#343b36",
+                        "surface-container-low": "#171d19",
+                        "on-secondary-container": "#a7ffc7",
+                        "on-tertiary": "#3f2e00",
+                        "outline": "#8a938b",
+                        "on-surface-variant": "#c0c9c0",
+                        "on-background": "#dee4dd",
+                        "error-container": "#93000a",
+                        "on-primary-fixed-variant": "#0f5132",
+                        "on-primary-container": "#84c39b",
+                        "inverse-surface": "#dee4dd",
+                        "tertiary-container": "#5b4300",
+                        "on-secondary-fixed": "#002110",
+                        "surface-tint": "#95d4ac",
+                        "background": "#0f1511",
+                        "tertiary-fixed": "#ffdf9e",
+                        "on-secondary-fixed-variant": "#00522f",
+                        "error": "#ffb4ab",
+                        "on-tertiary-fixed-variant": "#5b4300",
+                        "inverse-on-surface": "#2c322d",
+                        "on-surface": "#dee4dd",
+                        "surface": "#0f1511",
+                        "on-tertiary-fixed": "#261a00",
+                        "surface-variant": "#303632",
+                        "primary": "#95d4ac",
+                        "on-error-container": "#ffdad6",
+                        "secondary-fixed-dim": "#77da9f",
+                        "on-secondary": "#00391f",
+                        "surface-dim": "#0f1511"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "unit": "8px",
+                        "margin-desktop": "40px",
+                        "container-max": "1280px",
+                        "margin-mobile": "16px",
+                        "gutter": "24px"
+                    },
+                    "fontFamily": {
+                        "headline-lg-mobile": ["Inter"],
+                        "display-lg": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "headline-lg": ["Inter"],
+                        "body-sm": ["Inter"],
+                        "title-md": ["Inter"],
+                        "label-caps": ["JetBrains Mono"],
+                        "button-text": ["Inter"]
+                    },
+                    "fontSize": {
+                        "headline-lg-mobile": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                        "display-lg": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "headline-lg": ["32px", {"lineHeight": "40px", "fontWeight": "600"}],
+                        "body-sm": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                        "title-md": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                        "label-caps": ["12px", {"lineHeight": "16px", "letterSpacing": "0.1em", "fontWeight": "700"}],
+                        "button-text": ["15px", {"lineHeight": "16px", "fontWeight": "600"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background min-h-screen pb-24 font-body-lg text-body-lg">
+<!-- TopAppBar -->
+<header class="fixed top-0 left-0 w-full z-50 flex justify-between items-center px-margin-mobile h-16 bg-gradient-to-b from-primary-container to-on-primary-fixed-variant dark:bg-gradient-to-b dark:from-surface-container-highest dark:to-surface-dim shadow-[0_4px_6px_-1px_rgba(0,0,0,0.5)] border-b border-white/10">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full overflow-hidden border-2 border-secondary/30 shadow-inner">
+<img class="w-full h-full object-cover" data-alt="A professional headshot of a university supervisor in a dark academic setting. The lighting is dramatic and moody, reflecting a skeuomorphic aesthetic with deep forest green tones and soft golden highlights. He is wearing professional attire, exuding authority and academic prestige." src="https://lh3.googleusercontent.com/aida-public/AB6AXuALbrqok3bDAIvZaq7a6K5CB4u_lxOBMOzNAxb47fgHdxreCGte_W9vh4OxV9Ss3JI3kusahlNU1Kf8cmzQ7Zn4Z-TkwhIW-jPKal9ZGkkva_-9N1uAlJoTVjCFg-tWTY-i0v77PW1eh42O4CrtV4wbyS3A99W7e1ZqYgySDZ4Uyen97iIPdMtLayYeN6ZjtKW-JkNS2tWCGkLOHp26PlNANeKNlaTwPdw_6dPs6zmh7eCRfWBm0TnFeE4OlwuTJ7EPlCAwINzwPEA"/>
+</div>
+<h1 class="font-headline-lg-mobile text-headline-lg-mobile font-bold text-on-primary-container drop-shadow-md">SIWES Connect</h1>
+</div>
+<div class="flex items-center gap-4">
+<button class="material-symbols-outlined text-secondary hover:brightness-110 transition-all active:translate-y-0.5" style="font-size: 28px;">notifications</button>
+</div>
+</header>
+<main class="pt-24 px-margin-mobile max-w-container-max mx-auto">
+<!-- Screen Title Section -->
+<div class="flex flex-col mb-8">
+<h2 class="font-headline-lg text-headline-lg text-tertiary drop-shadow-sm">Logbook Review</h2>
+<p class="text-on-surface-variant font-label-caps text-label-caps mt-1 tracking-widest">FACULTY OF ENGINEERING • 2023/2024</p>
+</div>
+<!-- Search and Filter Bar -->
+<div class="relative mb-8">
+<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline">search</span>
+<input class="skeuo-input w-full h-14 pl-12 pr-4 rounded-xl text-on-surface placeholder:text-outline-variant font-body-lg" placeholder="Search assigned students..." type="text"/>
+</div>
+<!-- Student Grid (Asymmetric Bento-like flow) -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-gutter">
+<!-- Student Card 1 -->
+<div class="skeuo-card noise-texture rounded-xl p-5 border border-primary-container/30 flex flex-col gap-4">
+<div class="flex justify-between items-start">
+<div>
+<h3 class="font-title-md text-title-md text-on-surface">Okonkwo Chinua</h3>
+<p class="text-on-surface-variant font-label-caps text-[10px]">ENG/2018/042</p>
+</div>
+<span class="bg-error-container/20 text-error border border-error/30 px-3 py-1 rounded-full font-label-caps text-[10px] flex items-center gap-1">
+<span class="w-2 h-2 rounded-full bg-error animate-pulse shadow-[0_0_8px_rgba(255,180,171,0.8)]"></span>
+                        Review Required
+                    </span>
+</div>
+<div class="grooved-separator"></div>
+<div class="bg-surface-container-lowest/50 rounded-lg p-3 border border-white/5">
+<p class="font-label-caps text-[10px] text-outline mb-2 uppercase tracking-tighter">Latest Entry: Tuesday, Oct 24</p>
+<p class="text-sm text-on-surface line-clamp-2 leading-relaxed italic">"Assisted in the maintenance of the centrifugal pump assembly and documented pressure variances across the main line..."</p>
+</div>
+<div class="flex items-center justify-between mt-2">
+<div class="flex items-center gap-2">
+<span class="font-label-caps text-[10px] text-outline uppercase">AI Score:</span>
+<div class="flex items-center gap-1 bg-surface-container-high px-2 py-0.5 rounded border border-secondary/20">
+<span class="material-symbols-outlined text-secondary text-[14px]" style="font-variation-settings: 'FILL' 1;">stars</span>
+<span class="font-label-caps text-[10px] text-secondary">Good</span>
+</div>
+</div>
+<button class="skeuo-button px-5 py-2 rounded-lg text-white font-button-text text-button-text flex items-center gap-2">
+                        Review <span class="material-symbols-outlined text-[18px]">chevron_right</span>
+</button>
+</div>
+</div>
+<!-- Student Card 2 -->
+<div class="skeuo-card noise-texture rounded-xl p-5 border border-primary-container/30 flex flex-col gap-4">
+<div class="flex justify-between items-start">
+<div>
+<h3 class="font-title-md text-title-md text-on-surface">Adekunle Sarah</h3>
+<p class="text-on-surface-variant font-label-caps text-[10px]">ENG/2018/156</p>
+</div>
+<span class="bg-tertiary-container/30 text-tertiary border border-tertiary/30 px-3 py-1 rounded-full font-label-caps text-[10px] flex items-center gap-1">
+<span class="w-2 h-2 rounded-full bg-tertiary shadow-[0_0_8px_rgba(250,189,0,0.8)]"></span>
+                        Entry Pending
+                    </span>
+</div>
+<div class="grooved-separator"></div>
+<div class="bg-surface-container-lowest/50 rounded-lg p-3 border border-white/5">
+<p class="font-label-caps text-[10px] text-outline mb-2 uppercase tracking-tighter">Latest Entry: Monday, Oct 23</p>
+<p class="text-sm text-on-surface line-clamp-2 leading-relaxed italic">"Observed industrial safety protocols during the furnace heating cycle and recorded thermocouple readings..."</p>
+</div>
+<div class="flex items-center justify-between mt-2">
+<div class="flex items-center gap-2">
+<span class="font-label-caps text-[10px] text-outline uppercase">AI Score:</span>
+<div class="flex items-center gap-1 bg-surface-container-high px-2 py-0.5 rounded border border-tertiary/20">
+<span class="material-symbols-outlined text-tertiary text-[14px]" style="font-variation-settings: 'FILL' 1;">brightness_medium</span>
+<span class="font-label-caps text-[10px] text-tertiary">Average</span>
+</div>
+</div>
+<button class="skeuo-button px-5 py-2 rounded-lg text-white font-button-text text-button-text flex items-center gap-2">
+                        Review <span class="material-symbols-outlined text-[18px]">chevron_right</span>
+</button>
+</div>
+</div>
+<!-- Student Card 3 -->
+<div class="skeuo-card noise-texture rounded-xl p-5 border border-primary-container/30 flex flex-col gap-4 opacity-80 scale-95 md:scale-100 md:opacity-100">
+<div class="flex justify-between items-start">
+<div>
+<h3 class="font-title-md text-title-md text-on-surface">Ibrahim Musa</h3>
+<p class="text-on-surface-variant font-label-caps text-[10px]">ENG/2019/088</p>
+</div>
+<span class="bg-secondary-container/20 text-secondary border border-secondary/30 px-3 py-1 rounded-full font-label-caps text-[10px] flex items-center gap-1">
+<span class="w-2 h-2 rounded-full bg-secondary shadow-[0_0_8px_rgba(119,218,159,0.8)]"></span>
+                        Completed
+                    </span>
+</div>
+<div class="grooved-separator"></div>
+<div class="bg-surface-container-lowest/50 rounded-lg p-3 border border-white/5">
+<p class="font-label-caps text-[10px] text-outline mb-2 uppercase tracking-tighter">Latest Entry: Friday, Oct 20</p>
+<p class="text-sm text-on-surface line-clamp-2 leading-relaxed italic">"Finalized the weekly summary report for the electrical workshop phase. All tools cleaned and stored."</p>
+</div>
+<div class="flex items-center justify-between mt-2">
+<div class="flex items-center gap-2">
+<span class="font-label-caps text-[10px] text-outline uppercase">AI Score:</span>
+<div class="flex items-center gap-1 bg-surface-container-high px-2 py-0.5 rounded border border-secondary/20">
+<span class="material-symbols-outlined text-secondary text-[14px]" style="font-variation-settings: 'FILL' 1;">stars</span>
+<span class="font-label-caps text-[10px] text-secondary">Good</span>
+</div>
+</div>
+<button class="bg-surface-container-highest/50 px-5 py-2 rounded-lg text-on-surface-variant font-button-text text-button-text border border-white/5 cursor-not-allowed">
+                        Viewed
+                    </button>
+</div>
+</div>
+<!-- Student Card 4 -->
+<div class="skeuo-card noise-texture rounded-xl p-5 border border-primary-container/30 flex flex-col gap-4">
+<div class="flex justify-between items-start">
+<div>
+<h3 class="font-title-md text-title-md text-on-surface">Zubairu Amina</h3>
+<p class="text-on-surface-variant font-label-caps text-[10px]">ENG/2018/221</p>
+</div>
+<span class="bg-error-container/20 text-error border border-error/30 px-3 py-1 rounded-full font-label-caps text-[10px] flex items-center gap-1">
+<span class="w-2 h-2 rounded-full bg-error animate-pulse shadow-[0_0_8px_rgba(255,180,171,0.8)]"></span>
+                        Review Required
+                    </span>
+</div>
+<div class="grooved-separator"></div>
+<div class="bg-surface-container-lowest/50 rounded-lg p-3 border border-white/5">
+<p class="font-label-caps text-[10px] text-outline mb-2 uppercase tracking-tighter">Latest Entry: Wednesday, Oct 25</p>
+<p class="text-sm text-on-surface line-clamp-2 leading-relaxed italic">"Site visit to the foundation excavation area. Measured depths and confirmed rebar counts against blueprints."</p>
+</div>
+<div class="flex items-center justify-between mt-2">
+<div class="flex items-center gap-2">
+<span class="font-label-caps text-[10px] text-outline uppercase">AI Score:</span>
+<div class="flex items-center gap-1 bg-surface-container-high px-2 py-0.5 rounded border-error/20">
+<span class="material-symbols-outlined text-error text-[14px]" style="font-variation-settings: 'FILL' 1;">warning</span>
+<span class="font-label-caps text-[10px] text-error">Poor</span>
+</div>
+</div>
+<button class="skeuo-button px-5 py-2 rounded-lg text-white font-button-text text-button-text flex items-center gap-2">
+                        Review <span class="material-symbols-outlined text-[18px]">chevron_right</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Atmospheric Background Element -->
+<div class="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
+<div class="absolute top-1/4 -right-20 w-96 h-96 bg-primary-container/10 rounded-full blur-[120px]"></div>
+<div class="absolute bottom-1/4 -left-20 w-[500px] h-[500px] bg-tertiary-container/5 rounded-full blur-[150px]"></div>
+</div>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-2 py-3 bg-gradient-to-b from-surface-container-high to-surface-container-lowest dark:bg-gradient-to-b dark:from-surface-container-highest dark:to-surface-dim border-t border-white/5 shadow-[0_-4px_10px_rgba(0,0,0,0.4)] rounded-t-xl">
+<a class="flex flex-col items-center justify-center text-on-surface-variant opacity-80 hover:text-tertiary-fixed transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span class="font-label-caps text-label-caps mt-1">Dashboard</span>
+</a>
+<a class="flex flex-col items-center justify-center text-tertiary bg-surface-container-highest rounded-full px-4 py-1 shadow-[inset_0_2px_4px_rgba(0,0,0,0.5)] border-t border-white/5 scale-95 duration-75" href="#">
+<span class="material-symbols-outlined" data-icon="edit_note" style="font-variation-settings: 'FILL' 1;">edit_note</span>
+<span class="font-label-caps text-label-caps mt-1">Logbook</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant opacity-80 hover:text-tertiary-fixed transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="videocam">videocam</span>
+<span class="font-label-caps text-label-caps mt-1">Sessions</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant opacity-80 hover:text-tertiary-fixed transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="person">person</span>
+<span class="font-label-caps text-label-caps mt-1">Profile</span>
+</a>
+</nav>
+<script>
+        // Simple micro-interaction for cards
+        document.querySelectorAll('.skeuo-card').forEach(card => {
+            card.addEventListener('mouseenter', () => {
+                card.style.transform = 'translateY(-4px)';
+                card.style.transition = 'transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)';
+                card.style.borderColor = 'rgba(119, 218, 159, 0.5)';
+            });
+            card.addEventListener('mouseleave', () => {
+                card.style.transform = 'translateY(0)';
+                card.style.borderColor = 'rgba(15, 81, 50, 0.3)';
+            });
+        });
+
+        // Search input backlit effect
+        const searchInput = document.querySelector('.skeuo-input');
+        searchInput.addEventListener('focus', () => {
+            searchInput.parentElement.classList.add('scale-[1.01]');
+            searchInput.parentElement.style.transition = 'transform 0.2s ease';
+        });
+        searchInput.addEventListener('blur', () => {
+            searchInput.parentElement.classList.remove('scale-[1.01]');
+        });
+    </script>
+</body></html>

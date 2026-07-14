@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>SIWES Connect | Student Dashboard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=JetBrains+Mono:wght@700&family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&family=JetBrains+Mono:wght@100..900&display=swap" rel="stylesheet"/>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        
+        .skeuo-card {
+            background: linear-gradient(180deg, #1b211d 0%, #121814 100%);
+            box-shadow: 
+                inset 0 1px 0 0 rgba(255,255,255,0.05),
+                0 10px 15px -3px rgba(0,0,0,0.4),
+                0 4px 6px -2px rgba(0,0,0,0.05);
+            border: 1px solid #0f5132;
+        }
+
+        .skeuo-recessed {
+            background: #0a100c;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.5);
+        }
+
+        .skeuo-button-primary {
+            background: linear-gradient(180deg, #198754 0%, #0f5132 100%);
+            box-shadow: 
+                inset 0 1px 0 0 rgba(255,255,255,0.2),
+                0 4px 0 0 #082d1c;
+            transition: all 0.1s ease;
+        }
+        .skeuo-button-primary:active {
+            transform: translateY(2px);
+            box-shadow: 
+                inset 0 2px 4px rgba(0,0,0,0.3),
+                0 1px 0 0 #082d1c;
+        }
+
+        .skeuo-button-amber {
+            background: linear-gradient(180deg, #ffc107 0%, #cc9a06 100%);
+            box-shadow: 
+                inset 0 1px 0 0 rgba(255,255,255,0.4),
+                0 4px 0 0 #8a6804;
+            transition: all 0.1s ease;
+            color: #261a00;
+        }
+        .skeuo-button-amber:active {
+            transform: translateY(2px);
+            box-shadow: 
+                inset 0 2px 4px rgba(0,0,0,0.3),
+                0 1px 0 0 #8a6804;
+        }
+
+        .grain-texture {
+            background-image: url("https://www.transparenttextures.com/patterns/asfalt-dark.png");
+            opacity: 0.03;
+            pointer-events: none;
+        }
+
+        .gauge-ring {
+            stroke-dasharray: 283;
+            stroke-dashoffset: 141.5; /* 50% for 45/90 days */
+            transition: stroke-dashoffset 1s ease-out;
+        }
+
+        @keyframes led-pulse {
+            0%, 100% { opacity: 1; filter: brightness(1); }
+            50% { opacity: 0.8; filter: brightness(1.5) drop-shadow(0 0 5px #ffc107); }
+        }
+        .led-indicator {
+            animation: led-pulse 2s infinite;
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "inverse-surface": "#dee4dd",
+                        "secondary": "#77da9f",
+                        "surface-bright": "#343b36",
+                        "on-background": "#dee4dd",
+                        "inverse-on-surface": "#2c322d",
+                        "on-primary-fixed-variant": "#0f5132",
+                        "tertiary-fixed": "#ffdf9e",
+                        "on-surface": "#dee4dd",
+                        "outline": "#8a938b",
+                        "surface-container-lowest": "#0a100c",
+                        "secondary-fixed-dim": "#77da9f",
+                        "on-primary-fixed": "#002111",
+                        "error": "#ffb4ab",
+                        "on-secondary-fixed-variant": "#00522f",
+                        "primary-fixed-dim": "#95d4ac",
+                        "secondary-container": "#007b49",
+                        "outline-variant": "#404942",
+                        "on-tertiary": "#3f2e00",
+                        "on-tertiary-container": "#e4ac00",
+                        "primary": "#95d4ac",
+                        "on-error-container": "#ffdad6",
+                        "on-surface-variant": "#c0c9c0",
+                        "on-tertiary-fixed": "#261a00",
+                        "surface-variant": "#303632",
+                        "surface-container-high": "#252b27",
+                        "surface-container-low": "#171d19",
+                        "on-tertiary-fixed-variant": "#5b4300",
+                        "tertiary": "#fabd00",
+                        "tertiary-fixed-dim": "#fabd00",
+                        "surface-container": "#1b211d",
+                        "primary-fixed": "#b0f1c7",
+                        "on-error": "#690005",
+                        "inverse-primary": "#2d6a48",
+                        "error-container": "#93000a",
+                        "on-secondary-container": "#a7ffc7",
+                        "on-primary-container": "#84c39b",
+                        "on-secondary": "#00391f",
+                        "surface-dim": "#0f1511",
+                        "background": "#0f1511",
+                        "on-secondary-fixed": "#002110",
+                        "surface-container-highest": "#303632",
+                        "primary-container": "#0f5132",
+                        "on-primary": "#003920",
+                        "secondary-fixed": "#93f7ba",
+                        "tertiary-container": "#5b4300",
+                        "surface-tint": "#95d4ac",
+                        "surface": "#0f1511"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "margin-desktop": "40px",
+                        "container-max": "1280px",
+                        "margin-mobile": "16px",
+                        "unit": "8px",
+                        "gutter": "24px"
+                    },
+                    "fontFamily": {
+                        "headline-lg-mobile": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "headline-lg": ["Inter"],
+                        "title-md": ["Inter"],
+                        "body-sm": ["Inter"],
+                        "button-text": ["Inter"],
+                        "label-caps": ["JetBrains Mono"],
+                        "display-lg": ["Inter"]
+                    },
+                    "fontSize": {
+                        "headline-lg-mobile": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                        "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "headline-lg": ["32px", {"lineHeight": "40px", "fontWeight": "600"}],
+                        "title-md": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                        "body-sm": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                        "button-text": ["15px", {"lineHeight": "16px", "fontWeight": "600"}],
+                        "label-caps": ["12px", {"lineHeight": "16px", "letterSpacing": "0.1em", "fontWeight": "700"}],
+                        "display-lg": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700"}]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-surface font-body-lg min-h-screen pb-24 selection:bg-tertiary/30">
+<div class="fixed inset-0 grain-texture z-0"></div>
+<!-- TopAppBar -->
+<header class="fixed top-0 left-0 w-full z-50 flex justify-between items-center px-margin-mobile h-16 bg-gradient-to-b from-primary-container to-on-primary-fixed-variant shadow-[0_4px_6px_-1px_rgba(0,0,0,0.5)] border-b border-white/10">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full border-2 border-white/20 overflow-hidden shadow-lg">
+<img class="w-full h-full object-cover" data-alt="A professional student profile portrait of a confident young man in a clean industrial work uniform, set against a blurred background of a modern tech workspace with subtle green and amber ambient lighting. High-end photography with sharp focus and realistic skin textures, matching the dark emerald and gold branding." src="https://lh3.googleusercontent.com/aida-public/AB6AXuC0cfcF5kqY77vWgTViLQdPmcGFch5PE4RucX_72KnV-pUQgyNB9-RmsornuZDjo-qFBQT2ZWeaDcpGsG5uiEvBMTo6DUUaU0eYTr1Ba_xC1MyLwCs91_2ioE31mT33DmqT-yrOxVGfpfrmb7U_64L4klc50SkJL40WiCJlJJJKb4mM0XABb5lcUbRgdeDguTuLORarquu8MvSnA4PsnVzc3v9iiGREYld61pLcUgahv6KspNHX5kI8WRIwm78SJQXdZ_fvHRtztBA"/>
+</div>
+<h1 class="font-headline-lg-mobile text-headline-lg-mobile font-bold text-on-primary-container drop-shadow-md">SIWES Connect</h1>
+</div>
+<div class="flex items-center gap-4">
+<button class="w-10 h-10 flex items-center justify-center rounded-full bg-black/20 text-secondary hover:brightness-110 transition-all active:translate-y-0.5">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+</div>
+</header>
+<main class="relative z-10 pt-24 px-margin-mobile max-w-container-max mx-auto space-y-8">
+<!-- Welcome Section -->
+<section class="flex flex-col md:flex-row justify-between items-end gap-4">
+<div>
+<p class="font-label-caps text-label-caps text-secondary uppercase tracking-widest mb-1">Operational Dashboard</p>
+<h2 class="font-display-lg text-headline-lg md:text-display-lg text-white">Welcome, Chidi</h2>
+</div>
+<div class="flex items-center gap-2 bg-surface-container-high px-4 py-2 rounded-lg border border-white/5 shadow-inner">
+<div class="w-2 h-2 rounded-full bg-tertiary led-indicator"></div>
+<span class="font-label-caps text-label-caps text-on-surface-variant">System Online: Week 8</span>
+</div>
+</section>
+<!-- Progress Gauge Section -->
+<section class="grid grid-cols-1 lg:grid-cols-3 gap-gutter">
+<div class="lg:col-span-1 skeuo-card p-6 rounded-xl flex flex-col items-center justify-center text-center">
+<h3 class="font-label-caps text-label-caps text-on-surface-variant mb-4">Internship Completion</h3>
+<div class="relative w-48 h-48">
+<!-- Gauge Background -->
+<svg class="w-full h-full transform -rotate-90">
+<circle class="text-surface-container-lowest" cx="96" cy="96" fill="transparent" r="90" stroke="currentColor" stroke-width="12"></circle>
+<circle class="gauge-ring" cx="96" cy="96" fill="transparent" r="90" stroke="url(#amber-grad)" stroke-linecap="round" stroke-width="12"></circle>
+<defs>
+<lineargradient id="amber-grad" x1="0%" x2="100%" y1="0%" y2="100%">
+<stop offset="0%" style="stop-color:#fabd00;stop-opacity:1"></stop>
+<stop offset="100%" style="stop-color:#ffdf9e;stop-opacity:1"></stop>
+</lineargradient>
+</defs>
+</svg>
+<div class="absolute inset-0 flex flex-col items-center justify-center">
+<span class="font-display-lg text-headline-lg text-white">50%</span>
+<span class="font-label-caps text-[10px] text-on-surface-variant">Progress</span>
+</div>
+</div>
+<p class="mt-4 font-body-sm text-on-surface-variant">45 of 90 days logged</p>
+</div>
+<!-- Metrics Cards -->
+<div class="lg:col-span-2 grid grid-cols-1 sm:grid-cols-3 gap-gutter">
+<div class="skeuo-card p-6 rounded-xl relative overflow-hidden group hover:translate-y-[-2px] transition-transform">
+<div class="absolute top-0 right-0 w-16 h-16 bg-primary/5 rounded-bl-full flex items-center justify-center">
+<span class="material-symbols-outlined text-primary/30">calendar_today</span>
+</div>
+<span class="font-label-caps text-label-caps text-on-surface-variant">Days Completed</span>
+<div class="mt-2 text-4xl font-bold text-primary">45</div>
+<div class="w-full h-1 bg-surface-container-lowest rounded-full mt-4 overflow-hidden">
+<div class="h-full bg-primary w-1/2 shadow-[0_0_8px_rgba(149,212,172,0.5)]"></div>
+</div>
+<p class="mt-2 font-body-sm text-on-surface-variant italic">Target: 90 Days</p>
+</div>
+<div class="skeuo-card p-6 rounded-xl relative overflow-hidden group hover:translate-y-[-2px] transition-transform">
+<div class="absolute top-0 right-0 w-16 h-16 bg-secondary/5 rounded-bl-full flex items-center justify-center">
+<span class="material-symbols-outlined text-secondary/30">verified_user</span>
+</div>
+<span class="font-label-caps text-label-caps text-on-surface-variant">Logs Approved</span>
+<div class="mt-2 text-4xl font-bold text-secondary">12</div>
+<p class="mt-4 font-body-sm text-on-surface-variant">Verified by Industry Supervisor</p>
+</div>
+<div class="skeuo-card p-6 rounded-xl relative overflow-hidden group hover:translate-y-[-2px] transition-transform">
+<div class="absolute top-0 right-0 w-16 h-16 bg-error/5 rounded-bl-full flex items-center justify-center">
+<span class="material-symbols-outlined text-error/30">pending_actions</span>
+</div>
+<span class="font-label-caps text-label-caps text-on-surface-variant">Pending</span>
+<div class="mt-2 text-4xl font-bold text-error">03</div>
+<p class="mt-4 font-body-sm text-on-surface-variant">Awaiting University review</p>
+</div>
+</div>
+</section>
+<!-- Quick Actions Section -->
+<section class="space-y-4">
+<h3 class="font-title-md text-title-md text-white px-1">Quick Operations</h3>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-gutter">
+<button class="skeuo-button-amber p-8 rounded-xl flex items-center justify-between group active:scale-95 duration-75">
+<div class="text-left">
+<span class="block font-headline-lg font-bold">Add Today's Log</span>
+<span class="font-body-sm opacity-80">Submit your daily activities for approval</span>
+</div>
+<span class="material-symbols-outlined text-4xl group-hover:rotate-12 transition-transform">edit_note</span>
+</button>
+<button class="skeuo-button-primary p-8 rounded-xl flex items-center justify-between text-white group active:scale-95 duration-75">
+<div class="text-left">
+<span class="block font-headline-lg font-bold">Join Live Call</span>
+<span class="font-body-sm opacity-80">Connect with your supervisor now</span>
+</div>
+<span class="material-symbols-outlined text-4xl group-hover:scale-110 transition-transform">videocam</span>
+</button>
+</div>
+</section>
+<!-- Recent Logs (Bento Style) -->
+<section class="space-y-4">
+<div class="flex justify-between items-center px-1">
+<h3 class="font-title-md text-title-md text-white">Logbook Overview</h3>
+<button class="font-label-caps text-label-caps text-secondary flex items-center gap-1 hover:underline">
+                    View Full History <span class="material-symbols-outlined text-sm">arrow_forward</span>
+</button>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-gutter">
+<div class="md:col-span-2 skeuo-recessed p-6 rounded-xl border border-white/5 space-y-4">
+<div class="flex justify-between items-center border-b border-white/5 pb-4">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-primary">event_available</span>
+<div>
+<p class="font-title-md text-white text-sm">Oct 24, 2023</p>
+<p class="text-xs text-on-surface-variant">Week 8, Day 4</p>
+</div>
+</div>
+<span class="px-3 py-1 rounded-full bg-secondary-container text-on-secondary-container text-[10px] font-bold uppercase tracking-wider">Approved</span>
+</div>
+<p class="font-body-sm text-on-surface-variant leading-relaxed">
+                        Implemented and tested secure authentication protocols for the internal management portal. Focused on multi-factor authentication (MFA) integration using industry standards.
+                    </p>
+</div>
+<div class="skeuo-card p-6 rounded-xl flex flex-col justify-between">
+<div>
+<h4 class="font-label-caps text-label-caps text-on-surface-variant mb-4">Supervisory Feedback</h4>
+<div class="flex gap-2 items-center mb-2">
+<div class="w-8 h-8 rounded-full bg-surface-container-lowest flex items-center justify-center border border-white/10">
+<span class="material-symbols-outlined text-sm text-tertiary" style="font-variation-settings: 'FILL' 1;">star</span>
+</div>
+<span class="font-title-md text-sm text-white">Engr. Adeleke</span>
+</div>
+<p class="font-body-sm text-on-surface-variant italic">"Excellent grasp of security principles. Keep the documentation as detailed as today's entry."</p>
+</div>
+<div class="mt-4 pt-4 border-t border-white/5">
+<div class="flex items-center justify-between text-[10px] text-on-surface-variant font-label-caps">
+<span>Rating: 4.8/5.0</span>
+<span>2 hours ago</span>
+</div>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-2 py-3 bg-gradient-to-b from-surface-container-high to-surface-container-lowest border-t border-white/5 shadow-[0_-4px_12px_rgba(0,0,0,0.3)] rounded-t-xl">
+<!-- Dashboard (Active) -->
+<a class="flex flex-col items-center justify-center text-tertiary bg-surface-container-highest rounded-full px-4 py-1 shadow-[inset_0_2px_4px_rgba(0,0,0,0.5)] border-t border-white/5 active:scale-95 duration-75" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">dashboard</span>
+<span class="font-label-caps text-[10px]">Dashboard</span>
+</a>
+<!-- Logbook -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant opacity-80 hover:text-tertiary-fixed transition-colors" href="#">
+<span class="material-symbols-outlined">edit_note</span>
+<span class="font-label-caps text-[10px]">Logbook</span>
+</a>
+<!-- Sessions -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant opacity-80 hover:text-tertiary-fixed transition-colors" href="#">
+<span class="material-symbols-outlined">videocam</span>
+<span class="font-label-caps text-[10px]">Sessions</span>
+</a>
+<!-- Profile -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant opacity-80 hover:text-tertiary-fixed transition-colors" href="#">
+<span class="material-symbols-outlined">person</span>
+<span class="font-label-caps text-[10px]">Profile</span>
+</a>
+</nav>
+<script>
+        // Simple micro-interaction for the cards
+        document.querySelectorAll('.skeuo-card').forEach(card => {
+            card.addEventListener('mousemove', (e) => {
+                const rect = card.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                card.style.setProperty('--mouse-x', `${x}px`);
+                card.style.setProperty('--mouse-y', `${y}px`);
+                
+                // Add a subtle shine effect based on mouse position
+                const shine = `radial-gradient(circle at ${x}px ${y}px, rgba(255,255,255,0.05) 0%, transparent 80%)`;
+                card.style.backgroundImage = `${shine}, linear-gradient(180deg, #1b211d 0%, #121814 100%)`;
+            });
+            
+            card.addEventListener('mouseleave', () => {
+                card.style.backgroundImage = `linear-gradient(180deg, #1b211d 0%, #121814 100%)`;
+            });
+        });
+
+        // Initialize progress bar animation
+        window.onload = () => {
+            const ring = document.querySelector('.gauge-ring');
+            if(ring) {
+                // Trigger reflow to ensure animation runs
+                ring.getBoundingClientRect();
+                ring.style.strokeDashoffset = "141.5"; // 50%
+            }
+        };
+    </script>
+</body></html>

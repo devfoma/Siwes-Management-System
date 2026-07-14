@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Supervisor Dashboard | SIWES Connect</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=JetBrains+Mono:wght@700&family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&family=JetBrains+Mono:wght@100..900&display=swap" rel="stylesheet"/>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .skeu-recessed {
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.5), 0 1px 0 rgba(255,255,255,0.05);
+        }
+        .skeu-raised {
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.1);
+        }
+        .skeu-card {
+            background: linear-gradient(180deg, #1b211d 0%, #0f1511 100%);
+            border: 1px solid #0f5132;
+            position: relative;
+            overflow: hidden;
+        }
+        .skeu-card::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background-image: url("https://www.transparenttextures.com/patterns/carbon-fibre.png");
+            opacity: 0.03;
+            pointer-events: none;
+        }
+        .led-glow-green { box-shadow: 0 0 8px #77da9f, inset 0 0 4px #00391f; background: radial-gradient(circle at 30% 30%, #b0f1c7, #198754); }
+        .led-glow-yellow { box-shadow: 0 0 8px #fabd00, inset 0 0 4px #3f2e00; background: radial-gradient(circle at 30% 30%, #ffdf9e, #fabd00); }
+        .led-glow-red { box-shadow: 0 0 8px #ffb4ab, inset 0 0 4px #690005; background: radial-gradient(circle at 30% 30%, #ffdad6, #93000a); }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+        .animate-pulse-slow { animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+
+        .grooved-separator {
+            border-top: 1px solid rgba(0,0,0,0.4);
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "inverse-surface": "#dee4dd",
+                      "secondary": "#77da9f",
+                      "surface-bright": "#343b36",
+                      "on-background": "#dee4dd",
+                      "inverse-on-surface": "#2c322d",
+                      "on-primary-fixed-variant": "#0f5132",
+                      "tertiary-fixed": "#ffdf9e",
+                      "on-surface": "#dee4dd",
+                      "outline": "#8a938b",
+                      "surface-container-lowest": "#0a100c",
+                      "secondary-fixed-dim": "#77da9f",
+                      "on-primary-fixed": "#002111",
+                      "error": "#ffb4ab",
+                      "on-secondary-fixed-variant": "#00522f",
+                      "primary-fixed-dim": "#95d4ac",
+                      "secondary-container": "#007b49",
+                      "outline-variant": "#404942",
+                      "on-tertiary": "#3f2e00",
+                      "on-tertiary-container": "#e4ac00",
+                      "primary": "#95d4ac",
+                      "on-error-container": "#ffdad6",
+                      "on-surface-variant": "#c0c9c0",
+                      "on-tertiary-fixed": "#261a00",
+                      "surface-variant": "#303632",
+                      "surface-container-high": "#252b27",
+                      "surface-container-low": "#171d19",
+                      "on-tertiary-fixed-variant": "#5b4300",
+                      "tertiary": "#fabd00",
+                      "tertiary-fixed-dim": "#fabd00",
+                      "surface-container": "#1b211d",
+                      "primary-fixed": "#b0f1c7",
+                      "on-error": "#690005",
+                      "inverse-primary": "#2d6a48",
+                      "error-container": "#93000a",
+                      "on-secondary-container": "#a7ffc7",
+                      "on-primary-container": "#84c39b",
+                      "on-secondary": "#00391f",
+                      "surface-dim": "#0f1511",
+                      "background": "#0f1511",
+                      "on-secondary-fixed": "#002110",
+                      "surface-container-highest": "#303632",
+                      "primary-container": "#0f5132",
+                      "on-primary": "#003920",
+                      "secondary-fixed": "#93f7ba",
+                      "tertiary-container": "#5b4300",
+                      "surface-tint": "#95d4ac",
+                      "surface": "#0f1511"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.125rem",
+                      "lg": "0.25rem",
+                      "xl": "0.5rem",
+                      "full": "0.75rem"
+              },
+              "spacing": {
+                      "margin-desktop": "40px",
+                      "container-max": "1280px",
+                      "margin-mobile": "16px",
+                      "unit": "8px",
+                      "gutter": "24px"
+              },
+              "fontFamily": {
+                      "headline-lg-mobile": ["Inter"],
+                      "body-lg": ["Inter"],
+                      "headline-lg": ["Inter"],
+                      "title-md": ["Inter"],
+                      "body-sm": ["Inter"],
+                      "button-text": ["Inter"],
+                      "label-caps": ["JetBrains Mono"],
+                      "display-lg": ["Inter"]
+              },
+              "fontSize": {
+                      "headline-lg-mobile": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                      "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                      "headline-lg": ["32px", {"lineHeight": "40px", "fontWeight": "600"}],
+                      "title-md": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                      "body-sm": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                      "button-text": ["15px", {"lineHeight": "16px", "fontWeight": "600"}],
+                      "label-caps": ["12px", {"lineHeight": "16px", "letterSpacing": "0.1em", "fontWeight": "700"}],
+                      "display-lg": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700"}]
+              }
+            },
+          },
+        }
+    </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-surface min-h-screen font-body-lg pb-24">
+<!-- TopAppBar -->
+<header class="fixed top-0 left-0 w-full z-50 flex justify-between items-center px-4 md:px-margin-desktop h-16 bg-gradient-to-b from-primary-container to-on-primary-fixed-variant dark:from-surface-container-highest dark:to-surface-dim shadow-[0_4px_6px_-1px_rgba(0,0,0,0.5)] border-b border-white/10">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full border-2 border-secondary overflow-hidden skeu-raised">
+<img class="w-full h-full object-cover" data-alt="A professional portrait of a university supervisor in business casual attire, set against a blurred academic office background. The lighting is soft and natural, emphasizing a high-end, authoritative yet approachable presence, matching the emerald and gold professional theme of the dashboard." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDmm8dbZ8Xdiw-DLiJBICInw0s0pBMstrJwvhutAoY5Oq0GW-5zF7t37oQPTPbBJiie6j1xC38-JcLU_G3Egq98SevdGrbY2BmRAXEMAH0x285q5g3bsse1KileV5Z1BO96zjicr1RE7L_Jy2r0eNIg1DXdmKMxxkcEVjqc9Oxv80e-YMtXnFp3UwsQNtzaMAwo5XLdiQX3v9M_KrTxY6sVZviwpukgZzxJF_xIBwPPYaG5DiRcXs99Slqkjz8rVHZjNZwkJYLTVnw"/>
+</div>
+<h1 class="font-headline-lg-mobile text-headline-lg-mobile font-bold text-on-primary-container drop-shadow-md">SIWES Connect</h1>
+</div>
+<div class="flex items-center gap-4">
+<button class="w-10 h-10 flex items-center justify-center rounded-lg skeu-raised bg-surface-container-high text-secondary hover:brightness-110 transition-all active:translate-y-0.5">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+</div>
+</header>
+<main class="pt-24 px-4 md:px-margin-desktop max-w-container-max mx-auto">
+<!-- Metrics Overview Section -->
+<section class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+<!-- Metric Card: Total Students -->
+<div class="skeu-card skeu-raised p-6 rounded-xl flex flex-col items-center text-center">
+<span class="font-label-caps text-label-caps text-on-surface-variant mb-2">TOTAL STUDENTS</span>
+<div class="text-display-lg font-display-lg text-secondary drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">24</div>
+<div class="mt-2 h-1 w-12 bg-secondary/30 rounded-full"></div>
+</div>
+<!-- Metric Card: Pending Logs -->
+<div class="skeu-card skeu-raised p-6 rounded-xl flex flex-col items-center text-center">
+<span class="font-label-caps text-label-caps text-on-surface-variant mb-2">PENDING LOGS</span>
+<div class="text-display-lg font-display-lg text-tertiary drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">08</div>
+<div class="mt-2 h-1 w-12 bg-tertiary/30 rounded-full"></div>
+</div>
+<!-- Metric Card: Calls Today -->
+<div class="skeu-card skeu-raised p-6 rounded-xl flex flex-col items-center text-center">
+<span class="font-label-caps text-label-caps text-on-surface-variant mb-2">CALLS TODAY</span>
+<div class="text-display-lg font-display-lg text-primary drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">02</div>
+<div class="mt-2 h-1 w-12 bg-primary/30 rounded-full"></div>
+</div>
+</section>
+<!-- Student Status Header -->
+<div class="flex items-center justify-between mb-6">
+<h2 class="font-headline-lg text-headline-lg text-on-surface">Student Status Monitoring</h2>
+<div class="flex gap-2">
+<span class="flex items-center gap-1 font-label-caps text-label-caps px-3 py-1 bg-surface-container-highest rounded-full border border-white/5 shadow-inner">
+<span class="w-2 h-2 rounded-full led-glow-green"></span> Optimal
+                </span>
+<span class="flex items-center gap-1 font-label-caps text-label-caps px-3 py-1 bg-surface-container-highest rounded-full border border-white/5 shadow-inner">
+<span class="w-2 h-2 rounded-full led-glow-yellow"></span> Alert
+                </span>
+</div>
+</div>
+<!-- Student Status Grid (Bento/Card Layout) -->
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+<!-- Student Card 1 -->
+<div class="skeu-card skeu-raised rounded-xl overflow-hidden group hover:border-secondary transition-colors duration-300">
+<div class="h-24 bg-gradient-to-r from-primary-container to-secondary/20 relative">
+<div class="absolute -bottom-6 left-6 w-16 h-16 rounded-lg skeu-raised border-2 border-surface bg-surface overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="A close-up ID-style photo of a male engineering student in professional workshop gear. The environment is a clean, modern lab setting with subtle lighting. The aesthetic is realistic and high-fidelity, consistent with the SIWES Connect professional dark emerald design language." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBVLXr_Qxy29-TG7V0BTdu4opPv2-iBGL_nrLmSmh4NgAlMwi7m_WGaKDjVtHRcvd5mXUfOoKqvMRqqo2gYh62bTXgAXf9h3EizY7j5a1E4L3GPulssPQIkdVK-zUFsBARYWZ5pY9MyC3L_4TASuWJaQhyoU3kgQiC1tZMnwf41W-xxZSLT1sgGTYkduzFrOS75pAR-bePg_pdaicH-pn0ktxPmoz_cS7-GusoZpsE6Wz1t1z684M23nE5Q7yFud9U98uVJ89WD638"/>
+</div>
+</div>
+<div class="pt-8 p-6">
+<div class="flex justify-between items-start mb-4">
+<div>
+<h3 class="font-title-md text-title-md text-on-surface">Adebayo Samuel</h3>
+<p class="font-label-caps text-label-caps text-secondary">ENG/18/4201</p>
+</div>
+<div class="flex flex-col items-end gap-1">
+<span class="w-3 h-3 rounded-full led-glow-green animate-pulse-slow"></span>
+<span class="font-label-caps text-[8px] text-secondary">HEALTHY</span>
+</div>
+</div>
+<div class="skeu-recessed bg-black/20 p-3 rounded-lg mb-4">
+<p class="font-label-caps text-[10px] text-on-surface-variant uppercase tracking-widest">Placement Firm</p>
+<p class="font-body-sm text-body-sm text-on-surface">Chevron Nigeria Ltd.</p>
+</div>
+<button class="w-full py-2 bg-gradient-to-b from-primary-container to-on-primary-fixed-variant border border-white/5 rounded-lg text-button-text font-button-text skeu-raised hover:brightness-110 active:translate-y-0.5 transition-all">
+                        View Logbook
+                    </button>
+</div>
+</div>
+<!-- Student Card 2 -->
+<div class="skeu-card skeu-raised rounded-xl overflow-hidden group hover:border-tertiary transition-colors duration-300">
+<div class="h-24 bg-gradient-to-r from-tertiary-container to-tertiary/20 relative">
+<div class="absolute -bottom-6 left-6 w-16 h-16 rounded-lg skeu-raised border-2 border-surface bg-surface overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="A portrait of a female computer science student sitting at a modern developer workstation. The image has a professional and academic focus, with soft cinematic lighting and a background showing code on a monitor. Deep green and gold color accents align with the system identity." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCvBWjyYbxGy2eAwL_9v2k5c1jC666iOvMzf6-q1xeh8XTZ4mq8KqYFFjmF6Z2JFAGjcoXh2MenXVX8WD_dlq0-IEYix2XVSPmdxd53kO380tuDjK4A4zRH9Z0aYXDkBLLnUIp_GPJIl8LOOzTEtAIouNgR0-xgtEjNWgErJfNOqflP2rtsIgv-bjgiJ6PUwufOxP11mDxQhcKs37V5N4-7lu89OUY0tJEo9G2z7h25tLkjGmBqNc0RFovvKPwXwCpSby_dvDcvZ9g"/>
+</div>
+</div>
+<div class="pt-8 p-6">
+<div class="flex justify-between items-start mb-4">
+<div>
+<h3 class="font-title-md text-title-md text-on-surface">Fatima Ibrahim</h3>
+<p class="font-label-caps text-label-caps text-tertiary">CSC/19/2105</p>
+</div>
+<div class="flex flex-col items-end gap-1">
+<span class="w-3 h-3 rounded-full led-glow-yellow animate-pulse-slow"></span>
+<span class="font-label-caps text-[8px] text-tertiary">IDLE</span>
+</div>
+</div>
+<div class="skeu-recessed bg-black/20 p-3 rounded-lg mb-4">
+<p class="font-label-caps text-[10px] text-on-surface-variant uppercase tracking-widest">Placement Firm</p>
+<p class="font-body-sm text-body-sm text-on-surface">MainOne Data Center</p>
+</div>
+<button class="w-full py-2 bg-gradient-to-b from-tertiary-container to-on-tertiary-fixed-variant border border-white/5 rounded-lg text-button-text font-button-text skeu-raised hover:brightness-110 active:translate-y-0.5 transition-all">
+                        Request Update
+                    </button>
+</div>
+</div>
+<!-- Student Card 3 -->
+<div class="skeu-card skeu-raised rounded-xl overflow-hidden group hover:border-secondary transition-colors duration-300">
+<div class="h-24 bg-gradient-to-r from-primary-container to-secondary/20 relative">
+<div class="absolute -bottom-6 left-6 w-16 h-16 rounded-lg skeu-raised border-2 border-surface bg-surface overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="A clean, professional headshot of a male student in a business suit. The background is a sophisticated library or study hall with wood paneling and warm ambient lighting. The visual style is premium and realistic, mirroring an physical ID badge folder." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDL0CACX6Tw4a-HgFmuga44rithXKZNj7WeiUdN0HbmUVeDQ2zWJDa4xijBLLPEGI_o62s0ZsVl_KDFscWsW553yQJaT-6hp9E5W3Ek4P5y5tOPqMXrwRSQNOYBDqbvez3LtwcGJn4-cpD9ZLmCojueQWJN8MsnZxkmK6nJy-qtHXlG-FJnJ5U0_CBpdhB5m_J_Zrq_vKwUm78n3C20rr0u67-0A0A9RePAdTsTHw1oj7L5whFMFuJ2_ujJ9RHTjNSN1IkH7yidFLU"/>
+</div>
+</div>
+<div class="pt-8 p-6">
+<div class="flex justify-between items-start mb-4">
+<div>
+<h3 class="font-title-md text-title-md text-on-surface">Chidi Okafor</h3>
+<p class="font-label-caps text-label-caps text-secondary">MEC/18/1192</p>
+</div>
+<div class="flex flex-col items-end gap-1">
+<span class="w-3 h-3 rounded-full led-glow-green animate-pulse-slow"></span>
+<span class="font-label-caps text-[8px] text-secondary">ACTIVE</span>
+</div>
+</div>
+<div class="skeu-recessed bg-black/20 p-3 rounded-lg mb-4">
+<p class="font-label-caps text-[10px] text-on-surface-variant uppercase tracking-widest">Placement Firm</p>
+<p class="font-body-sm text-body-sm text-on-surface">Dangote Refinery</p>
+</div>
+<button class="w-full py-2 bg-gradient-to-b from-primary-container to-on-primary-fixed-variant border border-white/5 rounded-lg text-button-text font-button-text skeu-raised hover:brightness-110 active:translate-y-0.5 transition-all">
+                        View Logbook
+                    </button>
+</div>
+</div>
+<!-- Student Card 4 -->
+<div class="skeu-card skeu-raised rounded-xl overflow-hidden group hover:border-error transition-colors duration-300">
+<div class="h-24 bg-gradient-to-r from-error-container/40 to-error/20 relative">
+<div class="absolute -bottom-6 left-6 w-16 h-16 rounded-lg skeu-raised border-2 border-surface bg-surface overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="A portrait of a male student looking concerned or focused, in a technical environment with machinery. The lighting is moody and dramatic, focusing on the detail of the student's expression. Dark shadows and emerald highlights consistent with the academic skeuomorphic theme." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBhQpObWvt9rtMIUuBDiCyyzm_oSfHoPnVK3bWvDeYHAKJPzNU5gflb08jRH0mWBRbXT9rQqzvEXvoBJUIemSire48mk3JC3NIt5zjyfw1WA5Jlfo3NUzJfZ0VfyAU3xOC0Q0xzSyyodW_6Hhp0kRJ44bufj9zyzfjrHSZIE0PdldLL1zfvJczcky2Qol_hHMGhZ3H4IjYchz1zJzAOlVGIHiEMCW9MUTG5D-2g5tDPEIfuavUl4TEplKU0lz7g0fTfCUx7TT-mJdo"/>
+</div>
+</div>
+<div class="pt-8 p-6">
+<div class="flex justify-between items-start mb-4">
+<div>
+<h3 class="font-title-md text-title-md text-on-surface">Tunde Bakare</h3>
+<p class="font-label-caps text-label-caps text-error">CVE/18/3304</p>
+</div>
+<div class="flex flex-col items-end gap-1">
+<span class="w-3 h-3 rounded-full led-glow-red animate-pulse-slow"></span>
+<span class="font-label-caps text-[8px] text-error">CRITICAL</span>
+</div>
+</div>
+<div class="skeu-recessed bg-black/20 p-3 rounded-lg mb-4">
+<p class="font-label-caps text-[10px] text-on-surface-variant uppercase tracking-widest">Placement Firm</p>
+<p class="font-body-sm text-body-sm text-on-surface">Julius Berger PLC</p>
+</div>
+<button class="w-full py-2 bg-gradient-to-b from-error-container to-on-error border border-white/5 rounded-lg text-button-text font-button-text skeu-raised hover:brightness-110 active:translate-y-0.5 transition-all">
+                        Intervene
+                    </button>
+</div>
+</div>
+</div>
+<!-- Recent Activity Recessed Well -->
+<section class="mt-12 mb-8">
+<h2 class="font-headline-lg text-headline-lg text-on-surface mb-6">Communication History</h2>
+<div class="skeu-recessed bg-surface-container-lowest rounded-xl p-4 md:p-6">
+<div class="flex flex-col gap-0">
+<div class="flex items-center justify-between p-4 hover:bg-white/5 transition-colors cursor-pointer">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded-full bg-secondary-container flex items-center justify-center text-secondary">
+<span class="material-symbols-outlined" data-icon="videocam">videocam</span>
+</div>
+<div>
+<p class="font-title-md text-body-lg font-bold">Session with Adebayo Samuel</p>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Today, 10:30 AM • Completed</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-outline" data-icon="chevron_right">chevron_right</span>
+</div>
+<div class="grooved-separator w-full"></div>
+<div class="flex items-center justify-between p-4 hover:bg-white/5 transition-colors cursor-pointer">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded-full bg-tertiary-container flex items-center justify-center text-tertiary">
+<span class="material-symbols-outlined" data-icon="mail">mail</span>
+</div>
+<div>
+<p class="font-title-md text-body-lg font-bold">Inquiry: Fatima Ibrahim</p>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Yesterday, 04:15 PM • Pending Reply</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-outline" data-icon="chevron_right">chevron_right</span>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-2 py-3 bg-gradient-to-b from-surface-container-high to-surface-container-lowest dark:from-surface-container-highest dark:to-surface-dim rounded-t-xl border-t border-white/5 shadow-[0_-4px_12px_rgba(0,0,0,0.3)]">
+<!-- Active Tab: Dashboard -->
+<a class="flex flex-col items-center justify-center text-tertiary bg-surface-container-highest rounded-full px-6 py-1 shadow-[inset_0_2px_4px_rgba(0,0,0,0.5)] border-t border-white/5 transition-all scale-95" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span class="font-label-caps text-label-caps mt-1">Dashboard</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant opacity-80 hover:text-tertiary-fixed transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="edit_note">edit_note</span>
+<span class="font-label-caps text-label-caps mt-1">Logbook</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant opacity-80 hover:text-tertiary-fixed transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="videocam">videocam</span>
+<span class="font-label-caps text-label-caps mt-1">Sessions</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant opacity-80 hover:text-tertiary-fixed transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="person">person</span>
+<span class="font-label-caps text-label-caps mt-1">Profile</span>
+</a>
+</nav>
+<!-- Tooltip / Interactive Helper Script -->
+<script>
+        document.querySelectorAll('button').forEach(btn => {
+            btn.addEventListener('mousedown', function() {
+                this.classList.add('scale-95');
+                this.style.boxShadow = "inset 0 2px 4px rgba(0,0,0,0.3)";
+            });
+            btn.addEventListener('mouseup', function() {
+                this.classList.remove('scale-95');
+                this.style.boxShadow = "";
+            });
+            btn.addEventListener('mouseleave', function() {
+                this.classList.remove('scale-95');
+                this.style.boxShadow = "";
+            });
+        });
+    </script>
+</body></html>

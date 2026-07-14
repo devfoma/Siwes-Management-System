@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>AI Analysis Detail - SIWES Connect</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=JetBrains+Mono:wght@700&family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&family=JetBrains+Mono:wght@100..900&display=swap" rel="stylesheet"/>
+<!-- Tailwind Configuration -->
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                "on-tertiary-container": "#e4ac00",
+                "on-primary-fixed": "#002111",
+                "on-surface-variant": "#c0c9c0",
+                "primary-fixed-dim": "#95d4ac",
+                "inverse-primary": "#2d6a48",
+                "secondary": "#77da9f",
+                "surface-bright": "#343b36",
+                "on-error": "#690005",
+                "surface-container-high": "#252b27",
+                "error-container": "#93000a",
+                "on-tertiary-fixed": "#261a00",
+                "on-secondary-fixed": "#002110",
+                "tertiary": "#fabd00",
+                "outline": "#8a938b",
+                "secondary-fixed": "#93f7ba",
+                "on-primary-container": "#84c39b",
+                "inverse-on-surface": "#2c322d",
+                "surface-variant": "#303632",
+                "primary-container": "#0f5132",
+                "on-tertiary": "#3f2e00",
+                "surface-container-low": "#171d19",
+                "primary-fixed": "#b0f1c7",
+                "tertiary-container": "#5b4300",
+                "primary": "#95d4ac",
+                "on-secondary-container": "#a7ffc7",
+                "on-secondary-fixed-variant": "#00522f",
+                "tertiary-fixed-dim": "#fabd00",
+                "surface-tint": "#95d4ac",
+                "on-tertiary-fixed-variant": "#5b4300",
+                "surface-container-highest": "#303632",
+                "surface": "#0f1511",
+                "on-primary-fixed-variant": "#0f5132",
+                "on-background": "#dee4dd",
+                "on-secondary": "#00391f",
+                "background": "#0f1511",
+                "error": "#ffb4ab",
+                "secondary-container": "#007b49",
+                "on-surface": "#dee4dd",
+                "inverse-surface": "#dee4dd",
+                "surface-dim": "#0f1511",
+                "on-primary": "#003920",
+                "surface-container-lowest": "#0a100c",
+                "tertiary-fixed": "#ffdf9e",
+                "surface-container": "#1b211d",
+                "outline-variant": "#404942",
+                "on-error-container": "#ffdad6",
+                "secondary-fixed-dim": "#77da9f"
+            },
+            "borderRadius": {
+                "DEFAULT": "0.125rem",
+                "lg": "0.25rem",
+                "xl": "0.5rem",
+                "full": "0.75rem"
+            },
+            "spacing": {
+                "unit": "8px",
+                "margin-desktop": "40px",
+                "gutter": "24px",
+                "container-max": "1280px",
+                "margin-mobile": "16px"
+            },
+            "fontFamily": {
+                "label-caps": ["JetBrains Mono"],
+                "headline-lg-mobile": ["Inter"],
+                "body-sm": ["Inter"],
+                "display-lg": ["Inter"],
+                "button-text": ["Inter"],
+                "body-lg": ["Inter"],
+                "headline-lg": ["Inter"],
+                "title-md": ["Inter"]
+            },
+            "fontSize": {
+                "label-caps": ["12px", {"lineHeight": "16px", "letterSpacing": "0.1em", "fontWeight": "700"}],
+                "headline-lg-mobile": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                "body-sm": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                "display-lg": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                "button-text": ["15px", {"lineHeight": "16px", "fontWeight": "600"}],
+                "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                "headline-lg": ["32px", {"lineHeight": "40px", "fontWeight": "600"}],
+                "title-md": ["20px", {"lineHeight": "28px", "fontWeight": "600"}]
+            }
+          }
+        }
+      }
+    </script>
+<style>
+        body {
+            background-color: #0f1511;
+            color: #dee4dd;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .skeuo-surface {
+            background: linear-gradient(to bottom, #1b211d, #0f1511);
+            box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.05), 0 4px 10px rgba(0, 0, 0, 0.5);
+        }
+
+        .skeuo-recessed {
+            background: #0a100c;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.6);
+        }
+
+        .skeuo-button-primary {
+            background: linear-gradient(to bottom, #198754, #0F5132);
+            box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.2), 0 3px 0 0 #082d1c;
+            transition: all 0.1s ease-in-out;
+        }
+
+        .skeuo-button-primary:active {
+            transform: translateY(1px);
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3), 0 1px 0 0 #082d1c;
+        }
+
+        .skeuo-button-secondary {
+            background: linear-gradient(to bottom, #fabd00, #b58900);
+            box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.3), 0 3px 0 0 #7a5d00;
+            transition: all 0.1s ease-in-out;
+        }
+
+        .skeuo-button-secondary:active {
+            transform: translateY(1px);
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3), 0 1px 0 0 #7a5d00;
+        }
+
+        .paper-card {
+            background: #e5e7eb;
+            background-image: radial-gradient(#d1d5db 1px, transparent 1px);
+            background-size: 20px 20px;
+            color: #1f2937;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3), 2px 2px 0 #fff inset;
+        }
+
+        .led-glow-green {
+            box-shadow: 0 0 15px #198754, inset 0 0 5px rgba(255,255,255,0.5);
+        }
+
+        .etched-glass {
+            background: rgba(48, 54, 50, 0.6);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.2);
+        }
+
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+        }
+
+        .grooved-separator {
+            border-top: 1px solid #050806;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .grain-overlay {
+            pointer-events: none;
+            opacity: 0.03;
+            background-image: url("https://www.transparenttextures.com/patterns/felt.png");
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-surface selection:bg-tertiary selection:text-on-tertiary">
+<!-- Top AppBar -->
+<header class="fixed top-0 left-0 w-full z-50 flex justify-between items-center px-margin-mobile h-16 bg-gradient-to-b from-primary-container to-on-primary-fixed-variant shadow-[0_4px_6px_-1px_rgba(0,0,0,0.5)] border-b border-white/10">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full border-2 border-secondary overflow-hidden shadow-inner bg-surface-container">
+<img class="w-full h-full object-cover" data-alt="A professional portrait of a university supervisor, middle-aged with a dignified expression, set against a dark academic background. The image has a rich, cinematic lighting style with deep forest green tones and warm golden highlights, matching the skeuomorphic UI aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCB_NlR1J7TqVz-wwX4Yxdr86dyaRkD2cBFf6iry_kGRqKUj_69TUZv9U5iPzaDxXBgZkjz-WxJnC9wzEe5EE4HjLzndUHN94ZtTkb5tB096Tx5SgWanbWfY_oFY9vRzWfOfhmkgE_-4VViOnGkbCLQCvX4J0TitT5c3kaKU2GdqO_S0odsIc8IUDSs-b3IVrX4JgQ0OXHziDJriGWBa_-VM5zLukPrPcXQzVXbgEtIEBk-rmv0qjkp82mRofk93T1WcGKnrVdbYuc"/>
+</div>
+<h1 class="font-headline-lg-mobile text-headline-lg-mobile font-bold text-on-primary-container drop-shadow-md">SIWES Connect</h1>
+</div>
+<button class="w-10 h-10 flex items-center justify-center rounded-full bg-surface-container-high hover:brightness-110 transition-all text-secondary">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+</header>
+<main class="pt-20 pb-32 px-margin-mobile max-w-container-max mx-auto relative">
+<div class="grain-overlay absolute inset-0 z-0"></div>
+<!-- Student Quick Info Header -->
+<section class="relative z-10 mb-gutter flex flex-col md:flex-row md:items-end justify-between gap-4">
+<div>
+<span class="font-label-caps text-label-caps text-tertiary uppercase mb-1 block">Active Review</span>
+<h2 class="font-headline-lg text-headline-lg text-on-surface">Chidi Okafor</h2>
+<div class="flex items-center gap-2 mt-1 text-on-surface-variant font-body-sm text-body-sm">
+<span class="material-symbols-outlined text-sm" data-icon="badge">badge</span>
+<span>2019/ENG/0452</span>
+<span class="mx-1 opacity-30">|</span>
+<span class="material-symbols-outlined text-sm" data-icon="domain">domain</span>
+<span>Dangote Refinery</span>
+</div>
+</div>
+<div class="skeuo-surface rounded-xl p-4 border border-primary-container/30 flex items-center gap-4">
+<div class="text-center">
+<p class="font-label-caps text-[10px] text-on-surface-variant opacity-60 uppercase">Date</p>
+<p class="font-title-md text-title-md font-bold text-secondary">Oct 24</p>
+</div>
+<div class="h-8 w-px bg-white/10"></div>
+<div class="text-center">
+<p class="font-label-caps text-[10px] text-on-surface-variant opacity-60 uppercase">Week</p>
+<p class="font-title-md text-title-md font-bold text-tertiary">08</p>
+</div>
+</div>
+</section>
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-gutter relative z-10">
+<!-- Main Content Left: Logbook Entry -->
+<div class="lg:col-span-7 flex flex-col gap-6">
+<div class="paper-card rounded-lg p-8 relative overflow-hidden transform rotate-[-0.5deg]">
+<div class="absolute top-0 right-0 w-16 h-16 bg-black/5 flex items-center justify-center -rotate-12 translate-x-4 -translate-y-4">
+<span class="material-symbols-outlined text-4xl opacity-10" data-icon="history_edu">history_edu</span>
+</div>
+<h3 class="font-label-caps text-label-caps text-on-primary-fixed mb-6 border-b border-black/10 pb-2">DAILY LOG ENTRY</h3>
+<div class="space-y-6">
+<div>
+<h4 class="font-label-caps text-[10px] text-black/50 mb-2 uppercase">Tasks Performed</h4>
+<p class="font-body-lg text-body-lg leading-relaxed italic text-slate-800">
+                                "Implemented and tested secure authentication protocols for the internal monitoring dashboard. Focused on hardening API endpoints using OAuth 2.0 standards and integrated a multi-factor authentication (MFA) layer using TOTP-based tokens."
+                            </p>
+</div>
+<div class="grooved-separator opacity-10"></div>
+<div>
+<h4 class="font-label-caps text-[10px] text-black/50 mb-2 uppercase">Skills Acquired</h4>
+<ul class="list-disc list-inside font-body-lg text-body-lg text-slate-700 space-y-1">
+<li>Deep understanding of MFA tokenization logic.</li>
+<li>Enhanced proficiency in security auditing.</li>
+<li>OAuth 2.0 implementation workflows.</li>
+</ul>
+</div>
+</div>
+<div class="mt-12 flex justify-end">
+<div class="opacity-30 flex flex-col items-end">
+<div class="h-px w-32 bg-black"></div>
+<p class="font-label-caps text-[10px] text-black mt-1 uppercase">Student Signature (Digital)</p>
+</div>
+</div>
+</div>
+</div>
+<!-- Sidebar Content Right: AI Analysis -->
+<div class="lg:col-span-5 flex flex-col gap-6">
+<!-- AI Panel -->
+<div class="skeuo-surface rounded-xl p-6 border border-primary-container/20">
+<div class="flex items-center gap-2 mb-6">
+<span class="material-symbols-outlined text-tertiary" data-icon="smart_toy">smart_toy</span>
+<h3 class="font-title-md text-title-md text-on-surface">Gemma 2B Analysis</h3>
+</div>
+<!-- Quality Rating Gauge -->
+<div class="flex items-center justify-between mb-8 p-4 skeuo-recessed rounded-xl border border-white/5">
+<div class="flex flex-col">
+<span class="font-label-caps text-[11px] text-on-surface-variant">LOG QUALITY</span>
+<span class="text-2xl font-bold text-secondary">GOOD</span>
+</div>
+<div class="w-12 h-12 rounded-full border-4 border-on-secondary-fixed bg-surface-container-highest flex items-center justify-center led-glow-green">
+<span class="material-symbols-outlined text-secondary" data-icon="verified" style="font-variation-settings: 'FILL' 1;">verified</span>
+</div>
+</div>
+<!-- Technical Extraction -->
+<div class="mb-8">
+<h4 class="font-label-caps text-[10px] text-on-surface-variant uppercase mb-3">Key Technical Domains</h4>
+<div class="flex flex-wrap gap-2">
+<span class="px-3 py-1 rounded-full text-label-caps text-[10px] bg-primary-container text-primary font-bold border border-secondary/20 shadow-sm">MULTI-FACTOR AUTH</span>
+<span class="px-3 py-1 rounded-full text-label-caps text-[10px] bg-primary-container text-primary font-bold border border-secondary/20 shadow-sm">SECURITY PROTOCOLS</span>
+<span class="px-3 py-1 rounded-full text-label-caps text-[10px] bg-primary-container text-primary font-bold border border-secondary/20 shadow-sm">MFA INTEGRATION</span>
+</div>
+</div>
+<!-- AI Summary -->
+<div class="mb-8">
+<h4 class="font-label-caps text-[10px] text-on-surface-variant uppercase mb-2">AI Summary</h4>
+<p class="font-body-sm text-body-sm text-on-surface-variant bg-surface-container-low p-4 rounded-lg border-l-4 border-tertiary italic">
+                            "The student demonstrates a high level of technical competence in cybersecurity. The entry provides specific details about authentication standards (OAuth 2.0) and practical implementation (TOTP), which aligns perfectly with Week 8 learning objectives."
+                        </p>
+</div>
+<!-- Suggestions/Flags -->
+<div class="mb-4">
+<h4 class="font-label-caps text-[10px] text-on-surface-variant uppercase mb-2">Suggestions</h4>
+<ul class="space-y-3">
+<li class="flex items-start gap-3 text-body-sm">
+<span class="material-symbols-outlined text-tertiary text-lg" data-icon="lightbulb">lightbulb</span>
+<span>Encourage student to document the specific testing tools used for security auditing.</span>
+</li>
+<li class="flex items-start gap-3 text-body-sm">
+<span class="material-symbols-outlined text-tertiary text-lg" data-icon="lightbulb">lightbulb</span>
+<span>Missing mention of supervisor oversight during API hardening.</span>
+</li>
+</ul>
+</div>
+</div>
+<!-- Action Buttons Cluster -->
+<div class="grid grid-cols-2 gap-4 mt-auto">
+<button class="skeuo-button-secondary py-4 px-2 rounded-xl flex flex-col items-center gap-1 group">
+<span class="material-symbols-outlined text-on-tertiary" data-icon="history">history</span>
+<span class="font-label-caps text-[11px] text-on-tertiary uppercase">Request Revision</span>
+</button>
+<button class="skeuo-button-primary py-4 px-2 rounded-xl flex flex-col items-center gap-1 group">
+<span class="material-symbols-outlined text-white" data-icon="check_circle">check_circle</span>
+<span class="font-label-caps text-[11px] text-white uppercase">Approve Entry</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Atmospheric Element: Subtle Glow -->
+<div class="fixed bottom-0 right-0 w-96 h-96 bg-primary/5 blur-[120px] rounded-full -z-10"></div>
+</main>
+<!-- Bottom NavBar -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-2 py-3 bg-gradient-to-b from-surface-container-high to-surface-container-lowest border-t border-white/5 shadow-[0_-4px_10px_rgba(0,0,0,0.4)] rounded-t-xl">
+<a class="flex flex-col items-center justify-center text-on-surface-variant opacity-80 hover:text-tertiary-fixed transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span class="font-label-caps text-label-caps">Dashboard</span>
+</a>
+<a class="flex flex-col items-center justify-center text-tertiary bg-surface-container-highest rounded-full px-4 py-1 shadow-[inset_0_2px_4px_rgba(0,0,0,0.5)] border-t border-white/5" href="#">
+<span class="material-symbols-outlined" data-icon="edit_note">edit_note</span>
+<span class="font-label-caps text-label-caps">Logbook</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant opacity-80 hover:text-tertiary-fixed transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="videocam">videocam</span>
+<span class="font-label-caps text-label-caps">Sessions</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant opacity-80 hover:text-tertiary-fixed transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="person">person</span>
+<span class="font-label-caps text-label-caps">Profile</span>
+</a>
+</nav>
+<script>
+        // Micro-interaction: Scale down on click for tactile feel
+        document.querySelectorAll('button').forEach(button => {
+            button.addEventListener('mousedown', () => {
+                button.style.transform = 'scale(0.98) translateY(1px)';
+            });
+            button.addEventListener('mouseup', () => {
+                button.style.transform = 'scale(1) translateY(0px)';
+            });
+            button.addEventListener('mouseleave', () => {
+                button.style.transform = 'scale(1) translateY(0px)';
+            });
+        });
+
+        // Add a subtle flicker effect to the 'LED' gauge
+        const led = document.querySelector('.led-glow-green');
+        setInterval(() => {
+            const flicker = 0.8 + Math.random() * 0.2;
+            led.style.opacity = flicker;
+        }, 1500);
+    </script>
+</body></html>
