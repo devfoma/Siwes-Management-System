@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { StyleSheet, View, StatusBar, Platform } from 'react-native';
-import { SIWESProvider, useSIWES } from './context/SIWESContext';
-import { Header } from './components/common/Header';
-import { StudentDashboard } from './components/student/StudentDashboard';
-import { LogbookForm } from './components/student/LogbookForm';
-import { VideoCallRoom } from './components/student/VideoCallRoom';
-import { SupervisorDashboard } from './components/supervisor/SupervisorDashboard';
-import { StudentDetailPortal } from './components/supervisor/StudentDetailPortal';
+import { SIWESProvider, useSIWES } from './src/context/SIWESContext';
+import { Header } from './src/components/common/Header';
+import { StudentDashboard } from './src/components/student/StudentDashboard';
+import { LogbookForm } from './src/components/student/LogbookForm';
+import { VideoCallRoom } from './src/components/student/VideoCallRoom';
+import { SupervisorDashboard } from './src/components/supervisor/SupervisorDashboard';
+import { StudentDetailPortal } from './src/components/supervisor/StudentDetailPortal';
 
 type Page = 'DASHBOARD' | 'ADD_LOG' | 'VIDEO' | 'STUDENT_DETAIL';
 

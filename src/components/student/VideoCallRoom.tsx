@@ -393,8 +393,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     padding: 8,
     gap: 6,
-    borderTWidth: 1,
-    borderTColor: 'rgba(255,255,255,0.05)',
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255,255,255,0.05)',
   },
   chatInputContainer: {
     flex: 1,
