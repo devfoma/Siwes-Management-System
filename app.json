@@ -1,11 +1,14 @@
 {
   "expo": {
-    "name": "expo_temp",
-    "slug": "expo_temp",
+    "name": "SIWES Connect",
+    "slug": "siwes-connect",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
+    "plugins": [
+      "@config-plugins/react-native-webrtc"
+    ],
     "ios": {
       "supportsTablet": true
     },

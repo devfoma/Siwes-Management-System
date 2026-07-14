@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, View, StatusBar, ActivityIndicator } from 'react-native';
+import { StyleSheet, View, StatusBar, ActivityIndicator, SafeAreaView } from 'react-native';
 import { SIWESProvider, useSIWES } from './src/context/SIWESContext';
 import { AuthProvider, useAuth } from './src/context/AuthContext';
 import { Header } from './src/components/common/Header';
 import { AuthScreen } from './src/components/auth/AuthScreen';
-import { StudentDashboard } from './src/components/student/StudentDashboard';
+import { StudentTabNavigation } from './src/components/student/StudentTabNavigation';
 import { LogbookForm } from './src/components/student/LogbookForm';
 import { VideoCallRoom } from './src/components/student/VideoCallRoom';
 import { SupervisorDashboard } from './src/components/supervisor/SupervisorDashboard';
@@ -25,19 +25,23 @@ const AppContent: React.FC = () => {
   // Loading spinner during auth session extraction
   if (loading) {
     return (
-      <View style={styles.loadingContainer}>
+      <SafeAreaView style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#77da9f" />
-      </View>
+      </SafeAreaView>
     );
   }
 
   // Redirect to skeuomorphic Auth Screen if unauthenticated
   if (!session) {
-    return <AuthScreen />;
+    return (
+      <SafeAreaView style={styles.container}>
+        <AuthScreen />
+      </SafeAreaView>
+    );
   }
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#0f1511" />
       
       {/* Top Header Navigation */}
@@ -47,17 +51,13 @@ const AppContent: React.FC = () => {
       <View style={styles.main}>
         {userRole === 'STUDENT' ? (
           <>
-            {page === 'DASHBOARD' && (
-              <StudentDashboard 
-                onAddLog={() => setPage('ADD_LOG')} 
-                onJoinCall={() => setPage('VIDEO')} 
-              />
-            )}
-            {page === 'ADD_LOG' && (
+            {page === 'ADD_LOG' ? (
               <LogbookForm onBack={() => setPage('DASHBOARD')} />
-            )}
-            {page === 'VIDEO' && (
-              <VideoCallRoom onLeave={() => setPage('DASHBOARD')} />
+            ) : (
+              <StudentTabNavigation
+                onAddLogTrigger={() => setPage('ADD_LOG')}
+                onJoinCallTrigger={() => setPage('VIDEO')}
+              />
             )}
           </>
         ) : (
@@ -77,7 +77,7 @@ const AppContent: React.FC = () => {
           </>
         )}
       </View>
-    </View>
+    </SafeAreaView>
   );
 };
 

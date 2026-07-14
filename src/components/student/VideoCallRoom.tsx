@@ -1,29 +1,123 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, Dimensions, KeyboardAvoidingView, Platform } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, KeyboardAvoidingView, Platform, Alert } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useSIWES } from '../../context/SIWESContext';
+
+// Safe dynamic import configuration for react-native-webrtc modules
+let RTCPeerConnection: any;
+let RTCView: any;
+let mediaDevices: any;
+
+try {
+  const webrtc = require('react-native-webrtc');
+  RTCPeerConnection = webrtc.RTCPeerConnection;
+  RTCView = webrtc.RTCView;
+  mediaDevices = webrtc.mediaDevices;
+} catch (e) {
+  // WebRTC native modules are unavailable (e.g. running in Expo Go sandbox)
+}
 
 interface VideoCallRoomProps {
   onLeave: () => void;
 }
 
 export const VideoCallRoom: React.FC<VideoCallRoomProps> = ({ onLeave }) => {
-  const { supervisionSessions } = useSIWES();
+  const { supervisionSessions, studentProfile } = useSIWES();
   const [micMuted, setMicMuted] = useState(false);
   const [cameraOff, setCameraOff] = useState(false);
-  const [screenSharing, setScreenSharing] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
   const [messages, setMessages] = useState<{ sender: string; text: string; time: string }[]>([
-    { sender: 'Dr. Charity Onyiyechi', text: 'Hello Faith, please show me your network rack and switches setup.', time: '12:30 PM' }
+    { sender: 'Dr. Charity', text: 'Hello Faith, please show me your network rack and switches setup.', time: '12:30 PM' }
   ]);
   const [inputText, setInputText] = useState('');
 
+  // WebRTC Stream states
+  const [localStream, setLocalStream] = useState<any>(null);
+  const [remoteStream, setRemoteStream] = useState<any>(null);
+  const pcRef = useRef<any>(null);
+
   const activeSession = supervisionSessions[0] || { roomId: 'ROOM-CS-EVAL', scheduledTime: new Date().toISOString() };
+
+  // Acquire local camera and microphone stream
+  useEffect(() => {
+    let active = true;
+
+    const startLocalStream = async () => {
+      if (!mediaDevices) {
+        return;
+      }
+      try {
+        const constraints = {
+          audio: true,
+          video: {
+            mandatory: {
+              minWidth: 500, // Provide constraint objects
+              minHeight: 300,
+              minFrameRate: 30
+            },
+            facingMode: 'user'
+          }
+        };
+
+        const stream = await mediaDevices.getUserMedia(constraints);
+        if (active) {
+          setLocalStream(stream);
+          setupPeerConnection(stream);
+        }
+      } catch (err: any) {
+        Alert.alert('Media Access Failed', 'Unable to access front camera/microphone.');
+      }
+    };
+
+    startLocalStream();
+
+    return () => {
+      active = false;
+      if (localStream) {
+        localStream.getTracks().forEach((track: any) => track.stop());
+      }
+      if (pcRef.current) {
+        pcRef.current.close();
+      }
+    };
+  }, []);
+
+  // Configure RTC Peer Connection
+  const setupPeerConnection = (stream: any) => {
+    if (!RTCPeerConnection) return;
+
+    try {
+      const configuration = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
+      const pc = new RTCPeerConnection(configuration);
+      pcRef.current = pc;
+
+      // Add local tracks to peer connection
+      stream.getTracks().forEach((track: any) => {
+        pc.addTrack(track, stream);
+      });
+
+      // Listen for remote tracks
+      pc.ontrack = (event: any) => {
+        if (event.streams && event.streams[0]) {
+          setRemoteStream(event.streams[0]);
+        }
+      };
+
+      // Listen for ICE candidates
+      pc.onicecandidate = (event: any) => {
+        if (event.candidate) {
+          // In a production app, transmit candidates to the signaling server (e.g. Supabase Realtime)
+        }
+      };
+    } catch (e) {
+      // Handle RTC setup fail silently
+    }
+  };
 
   const handleSendMessage = () => {
     if (!inputText.trim()) return;
     const newMsg = {
-      sender: 'Faith Amarachi',
+      sender: studentProfile.fullName,
       text: inputText,
       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     };
@@ -34,12 +128,32 @@ export const VideoCallRoom: React.FC<VideoCallRoomProps> = ({ onLeave }) => {
       setMessages(prev => [
         ...prev,
         {
-          sender: 'Dr. Charity Onyiyechi',
+          sender: 'Dr. Charity',
           text: 'Perfect. Your network switches are looking clean. I will approve your weekly log today.',
           time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
         }
       ]);
     }, 2000);
+  };
+
+  const handleToggleCamera = () => {
+    if (localStream) {
+      const videoTrack = localStream.getVideoTracks()[0];
+      if (videoTrack) {
+        videoTrack.enabled = cameraOff;
+      }
+    }
+    setCameraOff(!cameraOff);
+  };
+
+  const handleToggleMic = () => {
+    if (localStream) {
+      const audioTrack = localStream.getAudioTracks()[0];
+      if (audioTrack) {
+        audioTrack.enabled = micMuted;
+      }
+    }
+    setMicMuted(!micMuted);
   };
 
   return (
@@ -68,62 +182,72 @@ export const VideoCallRoom: React.FC<VideoCallRoomProps> = ({ onLeave }) => {
 
       {/* Main video call layout */}
       <View style={styles.videoArea}>
-        {/* Remote video mockup frame */}
+        {/* Remote Video (Supervisor) */}
         <View style={styles.remoteVideoContainer}>
-          {cameraOff ? (
-            <View style={styles.cameraOffTextContainer}>
-              <MaterialIcons name="videocam-off" size={48} color="rgba(255,255,255,0.2)" />
-              <Text style={styles.cameraOffText}>Your camera is off</Text>
-            </View>
+          {remoteStream && RTCView ? (
+            <RTCView
+              streamURL={remoteStream.toURL()}
+              style={styles.fullVideo}
+              objectFit="cover"
+            />
           ) : (
             <View style={styles.videoPlaceholder}>
-              {/* Box representing supervisor avatar/stream placeholder */}
               <View style={styles.supervisorAvatar}>
                 <Text style={styles.avatarText}>CO</Text>
               </View>
-              <Text style={styles.videoStreamLabel}>Dr. Charity Onyiyechi (Supervisor)</Text>
+              <Text style={styles.videoStreamLabel}>Dr. Charity (Supervisor)</Text>
+              <Text style={styles.signalStatus}>Awaiting Remote Peer Connection...</Text>
             </View>
           )}
 
           {/* Local PIP View */}
           <View style={styles.localPip}>
-            <View style={styles.pipHeader}>
-              <Text style={styles.pipHeaderText}>Self</Text>
-            </View>
-            <View style={styles.localAvatar}>
-              <Text style={styles.localAvatarText}>FA</Text>
-            </View>
+            {localStream && !cameraOff && RTCView ? (
+              <RTCView
+                streamURL={localStream.toURL()}
+                style={styles.pipVideo}
+                objectFit="cover"
+              />
+            ) : (
+              <View style={styles.localAvatarContainer}>
+                <View style={styles.localAvatar}>
+                  <Text style={styles.localAvatarText}>Self</Text>
+                </View>
+              </View>
+            )}
           </View>
 
           {/* Network indicator */}
           <View style={styles.networkBadge}>
             <MaterialIcons name="network-wifi" size={10} color="#77da9f" />
-            <Text style={styles.networkText}>Ping: 45ms</Text>
+            <Text style={styles.networkText}>WebRTC Live</Text>
           </View>
         </View>
 
-        {/* Overlay chat panel */}
+        {/* Messaging Chat Drawer Overlay */}
         {chatOpen && (
           <View style={styles.chatDrawer}>
-            <View style={styles.chatHeader}>
-              <Text style={styles.chatTitle}>Session Chat</Text>
-              <TouchableOpacity onPress={() => setChatOpen(false)}>
-                <MaterialIcons name="close" size={16} color="#c0c9c0" />
-              </TouchableOpacity>
-            </View>
-
-            <ScrollView style={styles.chatMessages} contentContainerStyle={styles.messagesContent}>
-              {messages.map((m, i) => {
-                const isSelf = m.sender.includes('Faith');
-                return (
-                  <View key={i} style={[styles.msgWrapper, isSelf && styles.msgWrapperSelf]}>
-                    <Text style={styles.msgSender}>{m.sender} • {m.time}</Text>
-                    <View style={[styles.msgBubble, isSelf ? styles.bubbleSelf : styles.bubbleRemote]}>
-                      <Text style={styles.msgText}>{m.text}</Text>
-                    </View>
+            <ScrollView contentContainerStyle={styles.chatScroll}>
+              {messages.map((msg, idx) => (
+                <View
+                  key={idx}
+                  style={[
+                    styles.msgWrapper,
+                    msg.sender === studentProfile.fullName ? styles.msgSelf : styles.msgRemote,
+                  ]}
+                >
+                  <Text style={styles.msgSender}>{msg.sender}</Text>
+                  <View
+                    style={[
+                      styles.msgBubble,
+                      msg.sender === studentProfile.fullName ? styles.bubbleSelf : styles.bubbleRemote,
+                    ]}
+                  >
+                    <Text style={styles.msgText}>{msg.text}</Text>
                   </View>
-                );
-              })}
+                  <Text style={styles.msgTime}>{msg.time}</Text>
+                </View>
+              ))}
             </ScrollView>
 
             <View style={styles.chatInputRow}>
@@ -131,7 +255,7 @@ export const VideoCallRoom: React.FC<VideoCallRoomProps> = ({ onLeave }) => {
                 <TextInput
                   value={inputText}
                   onChangeText={setInputText}
-                  placeholder="Send message..."
+                  placeholder="Send call message..."
                   placeholderTextColor="#666"
                   style={styles.chatInput}
                 />
@@ -144,32 +268,30 @@ export const VideoCallRoom: React.FC<VideoCallRoomProps> = ({ onLeave }) => {
         )}
       </View>
 
-      {/* Bottom controllers */}
-      <View style={styles.bottomActions}>
+      {/* Tactile Control Call Deck */}
+      <View style={styles.controlDeck}>
         <TouchableOpacity
-          onPress={() => setMicMuted(!micMuted)}
-          style={[styles.circleActionBtn, micMuted && styles.btnError]}
+          onPress={handleToggleMic}
+          style={[styles.deckBtn, micMuted && styles.deckBtnAlert]}
+          activeOpacity={0.8}
         >
           <MaterialIcons name={micMuted ? 'mic-off' : 'mic'} size={20} color="#ffffff" />
         </TouchableOpacity>
 
         <TouchableOpacity
-          onPress={() => setCameraOff(!cameraOff)}
-          style={[styles.circleActionBtn, cameraOff && styles.btnError]}
+          onPress={handleToggleCamera}
+          style={[styles.deckBtn, cameraOff && styles.deckBtnAlert]}
+          activeOpacity={0.8}
         >
           <MaterialIcons name={cameraOff ? 'videocam-off' : 'videocam'} size={20} color="#ffffff" />
         </TouchableOpacity>
 
         <TouchableOpacity
-          onPress={() => setScreenSharing(!screenSharing)}
-          style={[styles.circleActionBtn, screenSharing && styles.btnActive]}
+          onPress={onLeave}
+          style={[styles.deckBtn, styles.endCallBtn]}
+          activeOpacity={0.8}
         >
-          <MaterialIcons name="screen-share" size={20} color="#ffffff" />
-        </TouchableOpacity>
-
-        <TouchableOpacity onPress={onLeave} style={styles.endCallBtn} activeOpacity={0.8}>
-          <MaterialIcons name="call-end" size={18} color="#ffffff" />
-          <Text style={styles.endCallText}>End</Text>
+          <MaterialIcons name="call-end" size={20} color="#ffffff" />
         </TouchableOpacity>
       </View>
     </KeyboardAvoidingView>
@@ -179,22 +301,17 @@ export const VideoCallRoom: React.FC<VideoCallRoomProps> = ({ onLeave }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000000',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
-    overflow: 'hidden',
-    height: Dimensions.get('window').height - 120,
+    backgroundColor: '#0a100c',
   },
   topBar: {
-    height: 56,
-    backgroundColor: 'rgba(0, 0, 0, 0.75)',
+    height: 48,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 12,
+    paddingHorizontal: 16,
+    backgroundColor: '#1b211d',
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.05)',
+    borderBottomColor: '#0f5132',
   },
   sessionInfo: {
     flexDirection: 'row',
@@ -205,51 +322,47 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#77da9f',
+    backgroundColor: '#ffc107',
   },
   liveTitle: {
-    fontSize: 12,
-    fontWeight: 'bold',
     color: '#ffffff',
+    fontSize: 11,
+    fontWeight: 'bold',
   },
   roomId: {
-    fontSize: 9,
     color: '#c0c9c0',
-    textTransform: 'uppercase',
+    fontSize: 9,
   },
   circleBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: 'rgba(255,255,255,0.08)',
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#0f1511',
+    borderWidth: 1,
+    borderColor: '#0f5132',
     alignItems: 'center',
     justifyContent: 'center',
   },
   circleBtnActive: {
-    backgroundColor: '#77da9f',
+    backgroundColor: '#ffc107',
   },
   videoArea: {
     flex: 1,
     flexDirection: 'row',
+    position: 'relative',
   },
   remoteVideoContainer: {
     flex: 1,
-    backgroundColor: '#121212',
+    backgroundColor: '#0a100c',
     position: 'relative',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  cameraOffTextContainer: {
-    alignItems: 'center',
-    gap: 8,
-  },
-  cameraOffText: {
-    fontSize: 12,
-    color: '#c0c9c0',
+  fullVideo: {
+    ...StyleSheet.absoluteFillObject,
   },
   videoPlaceholder: {
     alignItems: 'center',
-    justifyContent: 'center',
     gap: 12,
   },
   supervisorAvatar: {
@@ -268,109 +381,103 @@ const styles = StyleSheet.create({
     color: '#95d4ac',
   },
   videoStreamLabel: {
-    fontSize: 11,
-    color: '#c0c9c0',
+    fontSize: 12,
+    color: '#ffffff',
+    fontWeight: 'bold',
+  },
+  signalStatus: {
+    fontSize: 10,
+    color: '#fabd00',
   },
   localPip: {
     position: 'absolute',
-    bottom: 12,
-    left: 12,
+    bottom: 16,
+    right: 16,
     width: 100,
-    height: 75,
+    height: 140,
+    borderRadius: 8,
     backgroundColor: '#1b211d',
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.15)',
+    borderWidth: 1.5,
+    borderColor: '#0f5132',
     overflow: 'hidden',
+  },
+  pipVideo: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  localAvatarContainer: {
+    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  pipHeader: {
-    position: 'absolute',
-    top: 2,
-    left: 2,
-    backgroundColor: 'rgba(0,0,0,0.6)',
-    paddingVertical: 1,
-    paddingHorizontal: 4,
-    borderRadius: 3,
-  },
-  pipHeaderText: {
-    fontSize: 8,
-    color: '#ffffff',
   },
   localAvatar: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: '#0f5132',
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#0a100c',
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#0f5132',
   },
   localAvatarText: {
+    color: '#95d4ac',
     fontSize: 12,
     fontWeight: 'bold',
-    color: '#95d4ac',
   },
   networkBadge: {
     position: 'absolute',
-    top: 12,
-    right: 12,
+    top: 16,
+    left: 16,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
     backgroundColor: 'rgba(0,0,0,0.6)',
-    paddingVertical: 2,
-    paddingHorizontal: 6,
-    borderRadius: 4,
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    borderRadius: 12,
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.05)',
   },
   networkText: {
+    color: '#ffffff',
+    fontSize: 8,
+    fontWeight: 'bold',
+  },
+  chatDrawer: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    bottom: 0,
+    width: 260,
+    backgroundColor: '#1b211d',
+    borderLeftWidth: 1,
+    borderLeftColor: '#0f5132',
+    zIndex: 10,
+  },
+  chatScroll: {
+    padding: 12,
+    gap: 12,
+  },
+  msgWrapper: {
+    gap: 2,
+    maxWidth: '90%',
+  },
+  msgSelf: {
+    alignSelf: 'flex-end',
+    alignItems: 'flex-end',
+  },
+  msgRemote: {
+    alignSelf: 'flex-start',
+    alignItems: 'flex-start',
+  },
+  msgSender: {
     fontSize: 8,
     color: '#77da9f',
     fontWeight: 'bold',
   },
-  chatDrawer: {
-    width: 220,
-    backgroundColor: 'rgba(27, 33, 29, 0.95)',
-    borderLeftWidth: 1,
-    borderLeftColor: 'rgba(255,255,255,0.05)',
-  },
-  chatHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.05)',
-  },
-  chatTitle: {
-    fontSize: 10,
-    fontWeight: 'bold',
-    color: '#ffffff',
-    textTransform: 'uppercase',
-  },
-  chatMessages: {
-    flex: 1,
-    padding: 10,
-  },
-  messagesContent: {
-    gap: 10,
-  },
-  msgWrapper: {
-    gap: 2,
-  },
-  msgWrapperSelf: {
-    alignItems: 'flex-end',
-  },
-  msgSender: {
-    fontSize: 8,
-    color: '#c0c9c0',
-  },
   msgBubble: {
     padding: 8,
     borderRadius: 6,
-    maxWidth: '90%',
   },
   bubbleSelf: {
     backgroundColor: '#0f5132',
@@ -388,6 +495,10 @@ const styles = StyleSheet.create({
     fontSize: 10,
     color: '#ffffff',
     lineHeight: 14,
+  },
+  msgTime: {
+    fontSize: 7,
+    color: '#c0c9c0',
   },
   chatInputRow: {
     flexDirection: 'row',
@@ -413,53 +524,36 @@ const styles = StyleSheet.create({
     width: 30,
     height: 30,
     borderRadius: 6,
-    backgroundColor: '#0f5132',
+    backgroundColor: '#198754',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  bottomActions: {
+  controlDeck: {
     height: 64,
-    backgroundColor: '#171d19',
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.05)',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 16,
+    gap: 20,
+    backgroundColor: '#1b211d',
+    borderTopWidth: 1,
+    borderTopColor: '#0f5132',
   },
-  circleActionBtn: {
+  deckBtn: {
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: 'rgba(255,255,255,0.05)',
+    backgroundColor: '#0f1511',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
+    borderColor: '#0f5132',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  btnError: {
-    backgroundColor: 'rgba(220, 53, 69, 0.15)',
-    borderColor: 'rgba(220, 53, 69, 0.3)',
-  },
-  btnActive: {
-    backgroundColor: 'rgba(119, 218, 159, 0.15)',
-    borderColor: 'rgba(119, 218, 159, 0.3)',
+  deckBtnAlert: {
+    backgroundColor: '#dc3545',
+    borderColor: '#dc3545',
   },
   endCallBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
     backgroundColor: '#dc3545',
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 22,
-    borderBottomWidth: 3,
-    borderBottomColor: '#69101a',
-  },
-  endCallText: {
-    color: '#ffffff',
-    fontSize: 11,
-    fontWeight: 'bold',
-    textTransform: 'uppercase',
+    borderColor: '#dc3545',
   },
 });

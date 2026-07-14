@@ -155,129 +155,67 @@ export const AuthScreen: React.FC = () => {
               </View>
             </View>
 
-            {/* Sign Up Role Specific Fields */}
+            {/* Sign Up Specific Fields */}
             {isSignUpMode && (
               <>
-                {/* Role selection tab */}
-                <View style={styles.inputGroup}>
-                  <Text style={styles.label}>Registering Role</Text>
-                  <View style={styles.roleTabsRow}>
-                    <TouchableOpacity
-                      onPress={() => setRole('STUDENT')}
-                      style={[styles.roleTab, role === 'STUDENT' && styles.roleTabActive]}
-                    >
-                      <Text style={[styles.roleTabText, role === 'STUDENT' && styles.roleTabTextActive]}>
-                        Student
-                      </Text>
-                    </TouchableOpacity>
+                <View style={styles.infoContainer}>
+                  <MaterialIcons name="info-outline" size={16} color="#95d4ac" />
+                  <Text style={styles.infoText}>
+                    Supervisors cannot register via the app. Accounts are created administratively. Please log in with your credentials.
+                  </Text>
+                </View>
 
-                    <TouchableOpacity
-                      onPress={() => setRole('SUPERVISOR')}
-                      style={[styles.roleTab, role === 'SUPERVISOR' && styles.roleTabActive]}
-                    >
-                      <Text style={[styles.roleTabText, role === 'SUPERVISOR' && styles.roleTabTextActive]}>
-                        Supervisor
-                      </Text>
-                    </TouchableOpacity>
+                <View style={styles.inputGroup}>
+                  <Text style={styles.label}>Matric Number</Text>
+                  <View style={styles.recessedInput}>
+                    <TextInput
+                      value={matricNo}
+                      onChangeText={setMatricNo}
+                      placeholder="2022 224 152"
+                      placeholderTextColor="#666"
+                      style={styles.textInput}
+                    />
                   </View>
                 </View>
 
-                {role === 'STUDENT' ? (
-                  <>
-                    <View style={styles.inputGroup}>
-                      <Text style={styles.label}>Matric Number</Text>
-                      <View style={styles.recessedInput}>
-                        <TextInput
-                          value={matricNo}
-                          onChangeText={setMatricNo}
-                          placeholder="2022 224 152"
-                          placeholderTextColor="#666"
-                          style={styles.textInput}
-                        />
-                      </View>
-                    </View>
+                <View style={styles.inputGroup}>
+                  <Text style={styles.label}>Department</Text>
+                  <View style={styles.recessedInput}>
+                    <TextInput
+                      value={department}
+                      onChangeText={setDepartment}
+                      placeholder="Computer Science"
+                      placeholderTextColor="#666"
+                      style={styles.textInput}
+                    />
+                  </View>
+                </View>
 
-                    <View style={styles.inputGroup}>
-                      <Text style={styles.label}>Department</Text>
-                      <View style={styles.recessedInput}>
-                        <TextInput
-                          value={department}
-                          onChangeText={setDepartment}
-                          placeholder="Computer Science"
-                          placeholderTextColor="#666"
-                          style={styles.textInput}
-                        />
-                      </View>
-                    </View>
+                <View style={styles.inputGroup}>
+                  <Text style={styles.label}>Placement Organisation Name</Text>
+                  <View style={styles.recessedInput}>
+                    <TextInput
+                      value={orgName}
+                      onChangeText={setOrgName}
+                      placeholder="Stitch Emerald Technologies"
+                      placeholderTextColor="#666"
+                      style={styles.textInput}
+                    />
+                  </View>
+                </View>
 
-                    <View style={styles.inputGroup}>
-                      <Text style={styles.label}>Placement Organisation Name</Text>
-                      <View style={styles.recessedInput}>
-                        <TextInput
-                          value={orgName}
-                          onChangeText={setOrgName}
-                          placeholder="Stitch Emerald Technologies"
-                          placeholderTextColor="#666"
-                          style={styles.textInput}
-                        />
-                      </View>
-                    </View>
-
-                    <View style={styles.inputGroup}>
-                      <Text style={styles.label}>Organisation Office Address</Text>
-                      <View style={styles.recessedInput}>
-                        <TextInput
-                          value={orgAddress}
-                          onChangeText={setOrgAddress}
-                          placeholder="12 Awolowo Road, Ikoyi, Lagos"
-                          placeholderTextColor="#666"
-                          style={styles.textInput}
-                        />
-                      </View>
-                    </View>
-                  </>
-                ) : (
-                  <>
-                    <View style={styles.inputGroup}>
-                      <Text style={styles.label}>Staff ID Number</Text>
-                      <View style={styles.recessedInput}>
-                        <TextInput
-                          value={staffId}
-                          onChangeText={setStaffId}
-                          placeholder="COOU/CS/2018/042"
-                          placeholderTextColor="#666"
-                          style={styles.textInput}
-                        />
-                      </View>
-                    </View>
-
-                    <View style={styles.inputGroup}>
-                      <Text style={styles.label}>Academic Department</Text>
-                      <View style={styles.recessedInput}>
-                        <TextInput
-                          value={department}
-                          onChangeText={setDepartment}
-                          placeholder="Computer Science"
-                          placeholderTextColor="#666"
-                          style={styles.textInput}
-                        />
-                      </View>
-                    </View>
-
-                    <View style={styles.inputGroup}>
-                      <Text style={styles.label}>Academic Designation</Text>
-                      <View style={styles.recessedInput}>
-                        <TextInput
-                          value={designation}
-                          onChangeText={setDesignation}
-                          placeholder="Senior Lecturer / SIWES Coordinator"
-                          placeholderTextColor="#666"
-                          style={styles.textInput}
-                        />
-                      </View>
-                    </View>
-                  </>
-                )}
+                <View style={styles.inputGroup}>
+                  <Text style={styles.label}>Organisation Office Address</Text>
+                  <View style={styles.recessedInput}>
+                    <TextInput
+                      value={orgAddress}
+                      onChangeText={setOrgAddress}
+                      placeholder="12 Awolowo Road, Ikoyi, Lagos"
+                      placeholderTextColor="#666"
+                      style={styles.textInput}
+                    />
+                  </View>
+                </View>
               </>
             )}
           </View>
@@ -420,31 +358,23 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontSize: 13,
   },
-  roleTabsRow: {
+  infoContainer: {
     flexDirection: 'row',
-    gap: 10,
-  },
-  roleTab: {
-    flex: 1,
     alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#0a100c',
-    borderRadius: 8,
-    height: 36,
+    gap: 8,
+    backgroundColor: 'rgba(149, 212, 172, 0.05)',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
+    borderColor: 'rgba(149, 212, 172, 0.2)',
+    padding: 10,
+    borderRadius: 8,
+    marginBottom: 8,
   },
-  roleTabActive: {
-    borderColor: '#95d4ac',
-    backgroundColor: 'rgba(149, 212, 172, 0.1)',
-  },
-  roleTabText: {
-    fontSize: 11,
-    fontWeight: 'bold',
-    color: '#c0c9c0',
-  },
-  roleTabTextActive: {
+  infoText: {
     color: '#95d4ac',
+    fontSize: 11,
+    lineHeight: 15,
+    flex: 1,
+    fontWeight: '500',
   },
   submitBtn: {
     alignItems: 'center',

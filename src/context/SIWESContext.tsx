@@ -1,11 +1,21 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 import type { UserRole, StudentProfile, SupervisorProfile, LogbookEntry, SupervisionSession, SupervisorStatus, AIStatus } from '../interfaces/types';
 import { analyzeLogbookWithGemma } from '../utils/mockGemma';
+import { useAuth } from './AuthContext';
+
+// Extend profile interfaces to carry full name for dynamic UIs
+export interface DynamicStudentProfile extends StudentProfile {
+  fullName: string;
+}
+
+export interface DynamicSupervisorProfile extends SupervisorProfile {
+  fullName: string;
+}
 
 interface SIWESContextType {
   userRole: UserRole;
-  studentProfile: StudentProfile;
-  supervisorProfile: SupervisorProfile;
+  studentProfile: DynamicStudentProfile;
+  supervisorProfile: DynamicSupervisorProfile;
   logbookEntries: LogbookEntry[];
   supervisionSessions: SupervisionSession[];
   toggleUserRole: () => void;
@@ -13,26 +23,6 @@ interface SIWESContextType {
   updateLogbookStatus: (entryId: string, status: SupervisorStatus, feedback: string) => void;
   scheduleSession: (dateTime: string) => void;
 }
-
-const initialStudent: StudentProfile = {
-  id: 'student-faith',
-  userId: 'user-student',
-  matricNo: '2022 224 152',
-  department: 'Computer Science',
-  organizationName: 'Stitch Emerald Technologies',
-  organizationAddress: '12 Awolowo Road, Ikoyi, Lagos, Nigeria',
-  latitude: 6.4483,
-  longitude: 3.4184,
-  supervisorId: 'supervisor-charity'
-};
-
-const initialSupervisor: SupervisorProfile = {
-  id: 'supervisor-charity',
-  userId: 'user-supervisor',
-  staffId: 'COOU/CS/2018/042',
-  department: 'Computer Science',
-  designation: 'Senior Lecturer / SIWES Coordinator'
-};
 
 const initialLogs: LogbookEntry[] = [
   {
@@ -107,9 +97,40 @@ const initialSessions: SupervisionSession[] = [
 const SIWESContext = createContext<SIWESContextType | undefined>(undefined);
 
 export const SIWESProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { user } = useAuth();
   const [userRole, setUserRole] = useState<UserRole>('STUDENT');
   const [logbookEntries, setLogbookEntries] = useState<LogbookEntry[]>(initialLogs);
   const [supervisionSessions, setSupervisionSessions] = useState<SupervisionSession[]>(initialSessions);
+
+  // Sync user role status from authenticated Supabase user metadata
+  useEffect(() => {
+    if (user?.user_metadata?.role) {
+      setUserRole(user.user_metadata.role);
+    }
+  }, [user]);
+
+  // Construct Dynamic profiles using logged in Supabase attributes
+  const studentProfile: DynamicStudentProfile = {
+    id: user?.id || 'student-faith',
+    userId: user?.id || 'user-student',
+    fullName: user?.user_metadata?.full_name || 'Faith Amarachi',
+    matricNo: user?.user_metadata?.role_data?.matricNo || '2022 224 152',
+    department: user?.user_metadata?.role_data?.department || 'Computer Science',
+    organizationName: user?.user_metadata?.role_data?.organizationName || 'Stitch Emerald Technologies',
+    organizationAddress: user?.user_metadata?.role_data?.organizationAddress || '12 Awolowo Road, Ikoyi, Lagos, Nigeria',
+    latitude: 6.4483,
+    longitude: 3.4184,
+    supervisorId: 'supervisor-charity'
+  };
+
+  const supervisorProfile: DynamicSupervisorProfile = {
+    id: user?.id || 'supervisor-charity',
+    userId: user?.id || 'user-supervisor',
+    fullName: user?.user_metadata?.full_name || 'Dr. Charity',
+    staffId: user?.user_metadata?.role_data?.staffId || 'COOU/CS/2018/042',
+    department: user?.user_metadata?.role_data?.department || 'Computer Science',
+    designation: user?.user_metadata?.role_data?.designation || 'Senior Lecturer / SIWES Coordinator'
+  };
 
   const toggleUserRole = () => {
     setUserRole(prev => (prev === 'STUDENT' ? 'SUPERVISOR' : 'STUDENT'));
@@ -124,7 +145,7 @@ export const SIWESProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
     const newEntry: LogbookEntry = {
       id: `log-${Date.now()}`,
-      studentId: 'student-faith',
+      studentId: studentProfile.id,
       entryDate: date,
       tasksPerformed,
       skillsAcquired,
@@ -155,8 +176,8 @@ export const SIWESProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const scheduleSession = (dateTime: string) => {
     const newSession: SupervisionSession = {
       id: `session-${Date.now()}`,
-      studentId: 'student-faith',
-      supervisorId: 'supervisor-charity',
+      studentId: studentProfile.id,
+      supervisorId: supervisorProfile.id,
       scheduledTime: dateTime,
       roomId: `ROOM-CS-${Math.floor(1000 + Math.random() * 9000)}`,
       sessionStatus: 'SCHEDULED',
@@ -169,8 +190,8 @@ export const SIWESProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     <SIWESContext.Provider
       value={{
         userRole,
-        studentProfile: initialStudent,
-        supervisorProfile: initialSupervisor,
+        studentProfile,
+        supervisorProfile,
         logbookEntries,
         supervisionSessions,
         toggleUserRole,

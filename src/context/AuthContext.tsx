@@ -74,6 +74,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     role: UserRole,
     roleData?: any
   ) => {
+    if (role === 'SUPERVISOR') {
+      return { 
+        error: new Error('Supervisor registration is restricted. Accounts must be provisioned via the administration backend.') 
+      };
+    }
     setLoading(true);
     try {
       const { data, error } = await supabase.auth.signUp({
