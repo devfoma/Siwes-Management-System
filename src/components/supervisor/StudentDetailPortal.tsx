@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Platform } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useSIWES } from '../../context/SIWESContext';
@@ -10,9 +10,18 @@ interface StudentDetailPortalProps {
 }
 
 export const StudentDetailPortal: React.FC<StudentDetailPortalProps> = ({ onBack }) => {
-  const { studentProfile, logbookEntries, updateLogbookStatus } = useSIWES();
-  const [selectedEntry, setSelectedEntry] = useState<LogbookEntry | null>(logbookEntries[0] || null);
+  const { activeStudentProfile, logbookEntries, updateLogbookStatus } = useSIWES();
+  const studentLogs = useMemo(
+    () => logbookEntries.filter((entry) => entry.studentId === activeStudentProfile?.id),
+    [activeStudentProfile?.id, logbookEntries]
+  );
+  const [selectedEntry, setSelectedEntry] = useState<LogbookEntry | null>(studentLogs[0] || null);
   const [feedbackText, setFeedbackText] = useState<string>('');
+
+  useEffect(() => {
+    setSelectedEntry(studentLogs[0] || null);
+    setFeedbackText(studentLogs[0]?.aiDetails?.suggestedComment || '');
+  }, [studentLogs]);
 
   const handleSelectEntry = (entry: LogbookEntry) => {
     setSelectedEntry(entry);
@@ -47,9 +56,9 @@ export const StudentDetailPortal: React.FC<StudentDetailPortalProps> = ({ onBack
         <Text style={styles.cardLabel}>Placement & Geolocation Verification</Text>
         <View style={styles.recessedMap}>
           <MaterialIcons name="location-on" size={24} color="#77da9f" />
-          <Text style={styles.mapText}>Stitch Emerald Technologies Office Node</Text>
+          <Text style={styles.mapText}>{activeStudentProfile?.organizationName || 'Placement not provided'}</Text>
           <Text style={styles.coordsText}>
-            Lat: {studentProfile.latitude}, Lon: {studentProfile.longitude}
+            Lat: {activeStudentProfile?.latitude ?? 'N/A'}, Lon: {activeStudentProfile?.longitude ?? 'N/A'}
           </Text>
           <View style={styles.verifiedTag}>
             <Text style={styles.verifiedTagText}>MATCH VERIFIED</Text>
@@ -63,7 +72,7 @@ export const StudentDetailPortal: React.FC<StudentDetailPortalProps> = ({ onBack
         
         {/* Horizontal timeline of submissions */}
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.timelineRow}>
-          {logbookEntries.map(entry => {
+          {studentLogs.map(entry => {
             const isSelected = selectedEntry?.id === entry.id;
             return (
               <TouchableOpacity
@@ -156,7 +165,7 @@ export const StudentDetailPortal: React.FC<StudentDetailPortalProps> = ({ onBack
         </View>
       ) : (
         <View style={styles.emptyCard}>
-          <Text style={styles.emptyText}>Select an entry from the timeline to review.</Text>
+          <Text style={styles.emptyText}>No logbook entries are available for this student yet.</Text>
         </View>
       )}
     </ScrollView>

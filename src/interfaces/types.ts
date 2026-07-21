@@ -2,6 +2,7 @@ export type UserRole = 'STUDENT' | 'SUPERVISOR' | 'ADMIN';
 export type AIStatus = 'PENDING' | 'CRITICAL' | 'COMPLIANT' | 'WARNING';
 export type SupervisorStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
 export type SessionStatus = 'SCHEDULED' | 'COMPLETED' | 'CANCELLED';
+export type CallStatus = 'WAITING' | 'CONNECTING' | 'CONNECTED' | 'ENDED' | 'FAILED';
 
 export interface User {
   id: string;
@@ -16,11 +17,12 @@ export interface StudentProfile {
   userId: string;
   matricNo: string;
   department: string;
+  faculty?: string;
   organizationName: string;
   organizationAddress: string;
-  latitude: number;
-  longitude: number;
-  supervisorId: string;
+  latitude: number | null;
+  longitude: number | null;
+  supervisorId: string | null;
 }
 
 export interface SupervisorProfile {
@@ -59,4 +61,13 @@ export interface SupervisionSession {
   roomId: string;
   sessionStatus: SessionStatus;
   notes?: string;
+}
+
+export interface ChatMessage {
+  id: string;
+  roomId: string;
+  senderId: string;
+  senderName: string;
+  text: string;
+  createdAt: string;
 }

@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { supabase } from '../utils/supabase';
+import { isSupabaseConfigured, supabase } from '../utils/supabase';
+import { ensureCurrentUserProfile } from '../services/siwesRepository';
 import type { User as SupabaseUser, Session } from '@supabase/supabase-js';
 import type { UserRole } from '../interfaces/types';
 
@@ -53,6 +54,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const signIn = async (email: string, password: string) => {
+    if (!isSupabaseConfigured) {
+      return { error: new Error('Supabase is not configured. Add EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY.') };
+    }
+
     setLoading(true);
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
@@ -79,6 +84,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         error: new Error('Supervisor registration is restricted. Accounts must be provisioned via the administration backend.') 
       };
     }
+    if (!isSupabaseConfigured) {
+      return { error: new Error('Supabase is not configured. Add EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY.') };
+    }
+
     setLoading(true);
     try {
       const { data, error } = await supabase.auth.signUp({
@@ -95,10 +104,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       if (error) throw error;
 
-      // In a real application, you would insert the profile metadata 
-      // into a 'profiles' or 'student_profiles' / 'supervisor_profiles' table 
-      // using Supabase client e.g. `await supabase.from('profiles').insert(...)`
+      if (data.user && data.session) {
+        await ensureCurrentUserProfile(data.user);
+      }
       
+      setLoading(false);
       return { error: null };
     } catch (e: any) {
       setLoading(false);
@@ -107,6 +117,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const signOut = async () => {
+    if (!isSupabaseConfigured) {
+      return { error: new Error('Supabase is not configured.') };
+    }
+
     setLoading(true);
     try {
       const { error } = await supabase.auth.signOut();

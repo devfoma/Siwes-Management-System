@@ -1,10 +1,10 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, Platform } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, Platform, StatusBar } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useSIWES } from '../../context/SIWESContext';
 
 export const Header: React.FC = () => {
-  const { userRole, toggleUserRole, studentProfile, supervisorProfile } = useSIWES();
+  const { userRole, currentUserName } = useSIWES();
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -13,7 +13,13 @@ export const Header: React.FC = () => {
         <View style={styles.brandContainer}>
           <View style={styles.logoBadge}>
             <MaterialIcons
-              name={userRole === 'STUDENT' ? 'school' : 'supervisor-account'}
+              name={
+                userRole === 'STUDENT'
+                  ? 'school'
+                  : userRole === 'SUPERVISOR'
+                  ? 'supervisor-account'
+                  : 'admin-panel-settings'
+              }
               size={20}
               color="#95d4ac"
             />
@@ -21,23 +27,17 @@ export const Header: React.FC = () => {
           <View>
             <Text style={styles.brandTitle}>SIWES Connect</Text>
             <Text style={styles.portalSub}>
-              {userRole === 'STUDENT' ? 'Student Portal' : 'Supervisor Portal'}
+              {userRole === 'STUDENT'
+                ? 'Student Portal'
+                : userRole === 'SUPERVISOR'
+                ? 'Supervisor Portal'
+                : 'Admin Portal'}
             </Text>
           </View>
         </View>
 
-        {/* Portal switcher controls */}
         <View style={styles.controls}>
-          <TouchableOpacity
-            onPress={toggleUserRole}
-            style={styles.switcherButton}
-            activeOpacity={0.85}
-          >
-            <MaterialIcons name="swap-horiz" size={14} color="#261a00" />
-            <Text style={styles.switcherText}>
-              To {userRole === 'STUDENT' ? 'Supervisor' : 'Student'}
-            </Text>
-          </TouchableOpacity>
+          <Text numberOfLines={1} style={styles.userName}>{currentUserName}</Text>
         </View>
       </View>
     </SafeAreaView>
@@ -47,6 +47,7 @@ export const Header: React.FC = () => {
 const styles = StyleSheet.create({
   safeArea: {
     backgroundColor: '#0f5132',
+    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) + 10 : 8,
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(255, 255, 255, 0.1)',
     ...Platform.select({
@@ -99,22 +100,13 @@ const styles = StyleSheet.create({
   controls: {
     flexDirection: 'row',
     alignItems: 'center',
+    maxWidth: 130,
   },
-  switcherButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: '#ffc107',
-    paddingVertical: 6,
-    paddingHorizontal: 10,
-    borderRadius: 8,
-    borderBottomWidth: 2,
-    borderBottomColor: '#8a6804',
-  },
-  switcherText: {
+  userName: {
     fontSize: 10,
     fontWeight: 'bold',
-    color: '#261a00',
+    color: '#ffffff',
     textTransform: 'uppercase',
+    textAlign: 'right',
   },
 });

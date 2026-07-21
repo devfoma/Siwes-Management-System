@@ -12,14 +12,14 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({ onAddLog, on
   const { logbookEntries, studentProfile } = useSIWES();
 
   const totalDays = 90;
-  const completedDays = logbookEntries.length + 42;
+  const completedDays = logbookEntries.length;
   const percentage = Math.min(Math.round((completedDays / totalDays) * 100), 100);
 
-  const approvedCount = logbookEntries.filter(e => e.supervisorStatus === 'APPROVED').length + 11;
+  const approvedCount = logbookEntries.filter(e => e.supervisorStatus === 'APPROVED').length;
   const pendingCount = logbookEntries.filter(e => e.supervisorStatus === 'PENDING').length;
   const rejectedCount = logbookEntries.filter(e => e.supervisorStatus === 'REJECTED').length;
 
-  const firstName = studentProfile.fullName ? studentProfile.fullName.split(' ')[0] : 'Student';
+  const firstName = studentProfile?.fullName ? studentProfile.fullName.split(' ')[0] : 'Student';
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>

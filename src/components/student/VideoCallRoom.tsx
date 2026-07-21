@@ -2,17 +2,23 @@ import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, KeyboardAvoidingView, Platform, Alert } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useSIWES } from '../../context/SIWESContext';
+import { useAuth } from '../../context/AuthContext';
+import { supabase } from '../../utils/supabase';
 
 // Safe dynamic import configuration for react-native-webrtc modules
 let RTCPeerConnection: any;
 let RTCView: any;
 let mediaDevices: any;
+let RTCIceCandidate: any;
+let RTCSessionDescription: any;
 
 try {
   const webrtc = require('react-native-webrtc');
   RTCPeerConnection = webrtc.RTCPeerConnection;
   RTCView = webrtc.RTCView;
   mediaDevices = webrtc.mediaDevices;
+  RTCIceCandidate = webrtc.RTCIceCandidate;
+  RTCSessionDescription = webrtc.RTCSessionDescription;
 } catch (e) {
   // WebRTC native modules are unavailable (e.g. running in Expo Go sandbox)
 }
@@ -21,50 +27,205 @@ interface VideoCallRoomProps {
   onLeave: () => void;
 }
 
+type CallMessage = {
+  id: string;
+  senderId: string;
+  senderName: string;
+  text: string;
+  createdAt: string;
+};
+
 export const VideoCallRoom: React.FC<VideoCallRoomProps> = ({ onLeave }) => {
-  const { supervisionSessions, studentProfile } = useSIWES();
+  const { user } = useAuth();
+  const {
+    activeStudentProfile,
+    currentUserId,
+    currentUserName,
+    selectedStudentId,
+    supervisionSessions,
+    userRole,
+  } = useSIWES();
   const [micMuted, setMicMuted] = useState(false);
   const [cameraOff, setCameraOff] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
-  const [messages, setMessages] = useState<{ sender: string; text: string; time: string }[]>([
-    { sender: 'Dr. Charity', text: 'Hello Faith, please show me your network rack and switches setup.', time: '12:30 PM' }
-  ]);
+  const [messages, setMessages] = useState<CallMessage[]>([]);
   const [inputText, setInputText] = useState('');
+  const [callStatus, setCallStatus] = useState<'WAITING' | 'CONNECTING' | 'CONNECTED' | 'FAILED'>('WAITING');
 
-  // WebRTC Stream states
   const [localStream, setLocalStream] = useState<any>(null);
   const [remoteStream, setRemoteStream] = useState<any>(null);
   const pcRef = useRef<any>(null);
+  const channelRef = useRef<any>(null);
+  const hasCreatedOfferRef = useRef(false);
+  const pendingCandidatesRef = useRef<any[]>([]);
 
-  const activeSession = supervisionSessions[0] || { roomId: 'ROOM-CS-EVAL', scheduledTime: new Date().toISOString() };
+  const activeSession =
+    supervisionSessions.find((session) => {
+      if (userRole === 'SUPERVISOR') {
+        return session.studentId === selectedStudentId && session.supervisorId === currentUserId;
+      }
+      return session.studentId === currentUserId;
+    }) || supervisionSessions[0];
 
-  // Acquire local camera and microphone stream
+  const remoteDisplayName =
+    userRole === 'SUPERVISOR'
+      ? activeStudentProfile?.fullName || 'Assigned Student'
+      : 'Supervisor';
+  const remoteInitials = remoteDisplayName
+    .split(' ')
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0])
+    .join('')
+    .toUpperCase() || 'SV';
+
   useEffect(() => {
+    if (!activeSession?.roomId || !currentUserId) return;
+
     let active = true;
+    let streamForCleanup: any = null;
+    const roomId = activeSession.roomId;
+    const isOfferer = userRole === 'SUPERVISOR';
+    hasCreatedOfferRef.current = false;
+    pendingCandidatesRef.current = [];
+
+    const sendSignal = async (type: string, payload: any) => {
+      await channelRef.current?.send({
+        type: 'broadcast',
+        event: 'signal',
+        payload: {
+          roomId,
+          senderId: currentUserId,
+          type,
+          payload,
+        },
+      });
+    };
+
+    const applyPendingCandidates = async (pc: any) => {
+      const candidates = [...pendingCandidatesRef.current];
+      pendingCandidatesRef.current = [];
+      for (const candidate of candidates) {
+        await pc.addIceCandidate(new RTCIceCandidate(candidate));
+      }
+    };
+
+    const createOffer = async (pc: any) => {
+      if (hasCreatedOfferRef.current) return;
+      hasCreatedOfferRef.current = true;
+      setCallStatus('CONNECTING');
+      const offer = await pc.createOffer({
+        offerToReceiveAudio: true,
+        offerToReceiveVideo: true,
+        voiceActivityDetection: true,
+      });
+      await pc.setLocalDescription(offer);
+      await sendSignal('offer', offer);
+    };
+
+    const handleRemoteSignal = async (signal: any, pc: any) => {
+      if (!signal || signal.roomId !== roomId || signal.senderId === currentUserId) return;
+
+      try {
+        if (signal.type === 'offer') {
+          setCallStatus('CONNECTING');
+          await pc.setRemoteDescription(new RTCSessionDescription(signal.payload));
+          await applyPendingCandidates(pc);
+          const answer = await pc.createAnswer();
+          await pc.setLocalDescription(answer);
+          await sendSignal('answer', answer);
+        } else if (signal.type === 'answer') {
+          await pc.setRemoteDescription(new RTCSessionDescription(signal.payload));
+          await applyPendingCandidates(pc);
+        } else if (signal.type === 'candidate') {
+          if (pc.remoteDescription) {
+            await pc.addIceCandidate(new RTCIceCandidate(signal.payload));
+          } else {
+            pendingCandidatesRef.current.push(signal.payload);
+          }
+        } else if (signal.type === 'leave') {
+          setCallStatus('WAITING');
+          setRemoteStream(null);
+        }
+      } catch (error) {
+        console.error('Error applying WebRTC signal:', error);
+        setCallStatus('FAILED');
+      }
+    };
 
     const startLocalStream = async () => {
       if (!mediaDevices) {
+        setCallStatus('FAILED');
+        Alert.alert(
+          'WebRTC Unavailable',
+          'react-native-webrtc requires a development build or production native build. It is not available in Expo Go.'
+        );
         return;
       }
+
       try {
         const constraints = {
           audio: true,
           video: {
-            mandatory: {
-              minWidth: 500, // Provide constraint objects
-              minHeight: 300,
-              minFrameRate: 30
-            },
-            facingMode: 'user'
-          }
+            frameRate: 30,
+            facingMode: 'user',
+          },
         };
 
         const stream = await mediaDevices.getUserMedia(constraints);
-        if (active) {
-          setLocalStream(stream);
-          setupPeerConnection(stream);
-        }
-      } catch (err: any) {
+        streamForCleanup = stream;
+
+        if (!active) return;
+        setLocalStream(stream);
+
+        const configuration = {
+          iceServers: [
+            { urls: 'stun:stun.l.google.com:19302' },
+            { urls: 'stun:stun1.l.google.com:19302' },
+          ],
+        };
+        const pc = new RTCPeerConnection(configuration);
+        pcRef.current = pc;
+
+        stream.getTracks().forEach((track: any) => {
+          pc.addTrack(track, stream);
+        });
+
+        pc.ontrack = (event: any) => {
+          if (event.streams && event.streams[0]) {
+            setRemoteStream(event.streams[0]);
+            setCallStatus('CONNECTED');
+          }
+        };
+
+        pc.onicecandidate = async (event: any) => {
+          if (event.candidate) {
+            await sendSignal('candidate', event.candidate);
+          }
+        };
+
+        pc.onconnectionstatechange = () => {
+          if (pc.connectionState === 'connected') setCallStatus('CONNECTED');
+          if (pc.connectionState === 'failed' || pc.connectionState === 'disconnected') setCallStatus('FAILED');
+        };
+
+        const channel = supabase
+          .channel(`siwes-call-${roomId}`, {
+            config: { broadcast: { self: false } },
+          })
+          .on('broadcast', { event: 'signal' }, ({ payload }: any) => {
+            handleRemoteSignal(payload, pc);
+          })
+          .subscribe(async (status) => {
+            if (status === 'SUBSCRIBED' && isOfferer) {
+              await createOffer(pc);
+            }
+          });
+
+        channelRef.current = channel;
+      } catch (err) {
+        console.error('getUserMedia failed:', err);
+        setCallStatus('FAILED');
         Alert.alert('Media Access Failed', 'Unable to access front camera/microphone.');
       }
     };
@@ -73,67 +234,86 @@ export const VideoCallRoom: React.FC<VideoCallRoomProps> = ({ onLeave }) => {
 
     return () => {
       active = false;
-      if (localStream) {
-        localStream.getTracks().forEach((track: any) => track.stop());
-      }
-      if (pcRef.current) {
-        pcRef.current.close();
+      sendSignal('leave', null).catch(() => undefined);
+      streamForCleanup?.getTracks().forEach((track: any) => track.stop());
+      pcRef.current?.close();
+      if (channelRef.current) {
+        supabase.removeChannel(channelRef.current);
       }
     };
-  }, []);
+  }, [activeSession?.roomId, currentUserId, userRole]);
 
-  // Configure RTC Peer Connection
-  const setupPeerConnection = (stream: any) => {
-    if (!RTCPeerConnection) return;
+  useEffect(() => {
+    if (!activeSession?.roomId) return;
 
-    try {
-      const configuration = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
-      const pc = new RTCPeerConnection(configuration);
-      pcRef.current = pc;
+    const loadMessages = async () => {
+      const { data, error } = await supabase
+        .from('call_messages')
+        .select('*')
+        .eq('room_id', activeSession.roomId)
+        .order('created_at', { ascending: true });
 
-      // Add local tracks to peer connection
-      stream.getTracks().forEach((track: any) => {
-        pc.addTrack(track, stream);
-      });
-
-      // Listen for remote tracks
-      pc.ontrack = (event: any) => {
-        if (event.streams && event.streams[0]) {
-          setRemoteStream(event.streams[0]);
-        }
-      };
-
-      // Listen for ICE candidates
-      pc.onicecandidate = (event: any) => {
-        if (event.candidate) {
-          // In a production app, transmit candidates to the signaling server (e.g. Supabase Realtime)
-        }
-      };
-    } catch (e) {
-      // Handle RTC setup fail silently
-    }
-  };
-
-  const handleSendMessage = () => {
-    if (!inputText.trim()) return;
-    const newMsg = {
-      sender: studentProfile.fullName,
-      text: inputText,
-      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      if (!error && data) {
+        setMessages(
+          data.map((row: any) => ({
+            id: row.id,
+            senderId: row.sender_id,
+            senderName: row.sender_name,
+            text: row.text,
+            createdAt: row.created_at,
+          }))
+        );
+      }
     };
-    setMessages(prev => [...prev, newMsg]);
+
+    loadMessages();
+
+    const channel = supabase
+      .channel(`siwes-call-messages-${activeSession.roomId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'call_messages',
+          filter: `room_id=eq.${activeSession.roomId}`,
+        },
+        (payload: any) => {
+          const row = payload.new;
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: row.id,
+              senderId: row.sender_id,
+              senderName: row.sender_name,
+              text: row.text,
+              createdAt: row.created_at,
+            },
+          ]);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [activeSession?.roomId]);
+
+  const handleSendMessage = async () => {
+    if (!inputText.trim() || !activeSession?.roomId || !user) return;
+    const text = inputText.trim();
     setInputText('');
 
-    setTimeout(() => {
-      setMessages(prev => [
-        ...prev,
-        {
-          sender: 'Dr. Charity',
-          text: 'Perfect. Your network switches are looking clean. I will approve your weekly log today.',
-          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-        }
-      ]);
-    }, 2000);
+    const { error } = await supabase.from('call_messages').insert({
+      room_id: activeSession.roomId,
+      sender_id: user.id,
+      sender_name: currentUserName,
+      text,
+    });
+
+    if (error) {
+      Alert.alert('Message Failed', error.message);
+    }
   };
 
   const handleToggleCamera = () => {
@@ -156,6 +336,23 @@ export const VideoCallRoom: React.FC<VideoCallRoomProps> = ({ onLeave }) => {
     setMicMuted(!micMuted);
   };
 
+  if (!activeSession) {
+    return (
+      <View style={styles.container}>
+        <View style={styles.videoPlaceholder}>
+          <View style={styles.supervisorAvatar}>
+            <MaterialIcons name="event-busy" size={36} color="#77da9f" />
+          </View>
+          <Text style={styles.videoStreamLabel}>No supervision session scheduled</Text>
+          <Text style={styles.signalStatus}>Ask a supervisor or admin to schedule a session before joining a call.</Text>
+          <TouchableOpacity onPress={onLeave} style={[styles.deckBtn, styles.endCallBtn]}>
+            <MaterialIcons name="arrow-back" size={20} color="#ffffff" />
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  }
+
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -166,7 +363,7 @@ export const VideoCallRoom: React.FC<VideoCallRoomProps> = ({ onLeave }) => {
         <View style={styles.sessionInfo}>
           <View style={styles.ledLive} />
           <View>
-            <Text style={styles.liveTitle}>Video Supervision Live</Text>
+            <Text style={styles.liveTitle}>Video Supervision {callStatus}</Text>
             <Text style={styles.roomId}>Room: {activeSession.roomId}</Text>
           </View>
         </View>
@@ -193,10 +390,12 @@ export const VideoCallRoom: React.FC<VideoCallRoomProps> = ({ onLeave }) => {
           ) : (
             <View style={styles.videoPlaceholder}>
               <View style={styles.supervisorAvatar}>
-                <Text style={styles.avatarText}>CO</Text>
+                <Text style={styles.avatarText}>{remoteInitials}</Text>
               </View>
-              <Text style={styles.videoStreamLabel}>Dr. Charity (Supervisor)</Text>
-              <Text style={styles.signalStatus}>Awaiting Remote Peer Connection...</Text>
+              <Text style={styles.videoStreamLabel}>{remoteDisplayName}</Text>
+              <Text style={styles.signalStatus}>
+                {callStatus === 'FAILED' ? 'Connection failed. Check media permissions and network.' : 'Awaiting remote peer connection...'}
+              </Text>
             </View>
           )}
 
@@ -233,19 +432,21 @@ export const VideoCallRoom: React.FC<VideoCallRoomProps> = ({ onLeave }) => {
                   key={idx}
                   style={[
                     styles.msgWrapper,
-                    msg.sender === studentProfile.fullName ? styles.msgSelf : styles.msgRemote,
+                    msg.senderId === currentUserId ? styles.msgSelf : styles.msgRemote,
                   ]}
                 >
-                  <Text style={styles.msgSender}>{msg.sender}</Text>
+                  <Text style={styles.msgSender}>{msg.senderName}</Text>
                   <View
                     style={[
                       styles.msgBubble,
-                      msg.sender === studentProfile.fullName ? styles.bubbleSelf : styles.bubbleRemote,
+                      msg.senderId === currentUserId ? styles.bubbleSelf : styles.bubbleRemote,
                     ]}
                   >
                     <Text style={styles.msgText}>{msg.text}</Text>
                   </View>
-                  <Text style={styles.msgTime}>{msg.time}</Text>
+                  <Text style={styles.msgTime}>
+                    {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  </Text>
                 </View>
               ))}
             </ScrollView>

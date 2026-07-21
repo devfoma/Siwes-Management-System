@@ -1,62 +1,54 @@
-# AI-Enhanced SIWES Management System with Real-Time Supervision
+# SIWES Connect
 
-An interactive web & mobile platform designed to automate and enhance the Student Industrial Work Experience Scheme (SIWES) in Nigerian tertiary institutions. By integrating artificial intelligence and real-time remote supervision capabilities, this system addresses traditional challenges like poor monitoring, weak communication, and manual record-keeping.
+SIWES Connect is a React Native / Expo application for managing the Student Industrial Work Experience Scheme with real student logbooks, supervisor review, admin assignment, AI-assisted entry review, and WebRTC video supervision.
 
----
+## Core Capabilities
 
-## 🚀 Key Features
+- Student signup, login, profile-backed placement details, and logbook submission.
+- Supervisor dashboards populated from assigned students in Supabase.
+- Admin views for student/supervisor mapping.
+- Persistent logbook approvals, feedback, report export, and realtime refresh.
+- WebRTC camera/microphone calls using `react-native-webrtc` with Supabase Realtime broadcast signaling.
+- Persistent in-call chat through the `call_messages` table.
+- Configurable AI review service through `EXPO_PUBLIC_AI_ANALYSIS_URL`.
 
-- **AI-Powered Logbook & Report Analysis**: Automatically reviews daily/weekly submissions, highlighting skills gained and providing intelligent assessment suggestions for supervisors.
-- **Real-Time Remote Supervision**: In-app communication tools and virtual meetings to facilitate supervisor-student interaction without requiring physical travels.
-- **Centralized Placement Tracking**: Simplified registration and mapping of industrial training placements.
-- **Supervision & Progress Dashboards**: Clean portals for Students, Academic Supervisors, Industry Supervisors, and SIWES Coordinators.
-- **Digital Logbook Submissions**: Smooth submission workflow for weekly logs and reports.
+## Production Setup
 
----
+1. Install dependencies:
 
-## 🛠️ Technology Stack
-
-- **Framework**: [Expo](https://expo.dev/) (React Native) for hybrid cross-platform development (Android, iOS, Web).
-- **Core Logic**: React, TypeScript, Expo Router.
-- **Language**: TypeScript (`~5.7.2`).
-
----
-
-## 📂 Project Structure
-
-- `App.tsx`: Root mobile entrypoint.
-- `index.ts`: Expo entry register.
-- `src/`: Application components, navigation, and screens.
-- `ai_enhanced_siwes_management_system.md`: Full project/seminar specification and research documentation.
-- `siwes_tdd_document.md`: Technical Design Document (TDD).
-
----
-
-## ⚙️ Getting Started
-
-### Prerequisites
-
-Make sure you have Node.js and npm installed.
-
-### Installation
-
-1. Install project dependencies:
    ```bash
    npm install
    ```
 
-2. Start the Expo development server:
+2. Create `.env`:
+
    ```bash
-   npm start
+   EXPO_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+   EXPO_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+   EXPO_PUBLIC_AI_ANALYSIS_URL=https://your-ai-service.example.com/analyze-logbook
+   EXPO_PUBLIC_ADMIN_API_URL=https://your-admin-api.example.com
    ```
 
-3. To run on a specific platform:
-   - **Android**: Press `a` in the terminal or run `npm run android`
-   - **iOS**: Press `i` in the terminal or run `npm run ios`
-   - **Web**: Press `w` in the terminal or run `npm run web`
+3. Run the Supabase schema in `supabase/schema.sql` from the Supabase SQL editor or your migration pipeline.
 
----
+4. Provision admin/supervisor accounts through a trusted backend. The mobile app intentionally does not create privileged supervisor auth users directly because that requires a service-role key.
 
-## 📝 About the Research
+5. Build with a native development build or production build for WebRTC. `react-native-webrtc` native modules do not run inside plain Expo Go.
 
-Developed as a partial fulfillment of the requirements for the award of Bachelor of Science (B.Sc.) degree in Computer Science, Department of Computer Science, Faculty of Physical Sciences, **Chukwuemeka Odumegwu Ojukwu University, Uli Campus**.
+## Commands
+
+```bash
+npm run start
+npm run android
+npm run ios
+npm run typecheck
+npm run doctor
+```
+
+On Windows PowerShell, use `npm.cmd run typecheck` if script execution policy blocks `npm`.
+
+## Notes
+
+- The current SDK is Expo 54, with the matching WebRTC config plugin pinned to `@config-plugins/react-native-webrtc@13`.
+- The app uses manual React state navigation, not Expo Router.
+- AI analysis is no longer a local mock in the submission flow. Configure `EXPO_PUBLIC_AI_ANALYSIS_URL` to enable live analysis.

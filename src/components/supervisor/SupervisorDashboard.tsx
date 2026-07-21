@@ -13,18 +13,18 @@ export const SupervisorDashboard: React.FC<SupervisorDashboardProps> = ({
   onSelectStudent,
   onJoinCall,
 }) => {
-  const { logbookEntries, supervisionSessions, studentProfile } = useSIWES();
+  const { assignedStudents, currentUserName, logbookEntries, supervisionSessions, setSelectedStudentId } = useSIWES();
 
-  const totalAssigned = 1;
+  const totalAssigned = assignedStudents.length;
   const pendingReviews = logbookEntries.filter((e) => e.supervisorStatus === 'PENDING').length;
   const scheduledCalls = supervisionSessions.filter((s) => s.sessionStatus === 'SCHEDULED').length;
 
-  const latestEntry: LogbookEntry | undefined = logbookEntries[0];
-  let healthIndicator: 'CRITICAL' | 'WARNING' | 'COMPLIANT' = 'COMPLIANT';
-  if (latestEntry) {
-    if (latestEntry.aiStatus === 'CRITICAL') healthIndicator = 'CRITICAL';
-    else if (latestEntry.aiStatus === 'WARNING') healthIndicator = 'WARNING';
-  }
+  const getHealthIndicator = (studentId: string): 'CRITICAL' | 'WARNING' | 'COMPLIANT' => {
+    const latestEntry: LogbookEntry | undefined = logbookEntries.find((entry) => entry.studentId === studentId);
+    if (latestEntry?.aiStatus === 'CRITICAL') return 'CRITICAL';
+    if (latestEntry?.aiStatus === 'WARNING') return 'WARNING';
+    return 'COMPLIANT';
+  };
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
@@ -32,7 +32,7 @@ export const SupervisorDashboard: React.FC<SupervisorDashboardProps> = ({
       <View style={styles.welcomeRow}>
         <View>
           <Text style={styles.subText}>Coordinator Portal</Text>
-          <Text style={styles.welcomeText}>Welcome, Dr. Charity</Text>
+          <Text style={styles.welcomeText}>Welcome, {currentUserName}</Text>
         </View>
         <View style={styles.systemBadge}>
           <View style={[styles.led, styles.ledGreen]} />
@@ -71,61 +71,90 @@ export const SupervisorDashboard: React.FC<SupervisorDashboardProps> = ({
           <Text style={styles.sortIndicator}>Sort: Latest Log</Text>
         </View>
 
-        <View style={styles.studentCard}>
-          <View style={styles.studentInfoRow}>
-            {/* Image mock badge */}
-            <View style={styles.avatarCircle}>
-              <Text style={styles.avatarText}>FA</Text>
-            </View>
-
-            <View style={styles.studentMeta}>
-              <View style={styles.studentNameRow}>
-                <Text style={styles.studentName}>Faith Amarachi</Text>
-                <Text style={styles.matricNo}>({studentProfile.matricNo})</Text>
-              </View>
-              <Text style={styles.deptText}>Dept: {studentProfile.department}</Text>
-              <Text style={styles.placementText}>Firm: {studentProfile.organizationName}</Text>
-            </View>
+        {assignedStudents.length === 0 && (
+          <View style={styles.emptyCard}>
+            <MaterialIcons name="person-search" size={28} color="#77da9f" />
+            <Text style={styles.emptyTitle}>No assigned students yet</Text>
+            <Text style={styles.emptyText}>Students assigned to your supervisor profile will appear here.</Text>
           </View>
+        )}
 
-          {/* Status Indicators and Switcher Controls */}
-          <View style={styles.divider} />
-          
-          <View style={styles.actionsRow}>
-            <View style={styles.statusGroup}>
-              <Text style={styles.statusLabel}>AI Status:</Text>
-              <View style={styles.healthBadge}>
-                <View
-                  style={[
-                    styles.ledIndicator,
-                    healthIndicator === 'COMPLIANT'
-                      ? styles.ledGreen
-                      : healthIndicator === 'WARNING'
-                      ? styles.ledYellow
-                      : styles.ledRed,
-                  ]}
-                />
-                <Text style={styles.healthText}>{healthIndicator}</Text>
+        {assignedStudents.map((student) => {
+          const healthIndicator = getHealthIndicator(student.id);
+          const initials = student.fullName
+            .split(' ')
+            .filter(Boolean)
+            .slice(0, 2)
+            .map((part) => part[0])
+            .join('')
+            .toUpperCase() || 'ST';
+
+          return (
+            <View key={student.id} style={styles.studentCard}>
+              <View style={styles.studentInfoRow}>
+                <View style={styles.avatarCircle}>
+                  <Text style={styles.avatarText}>{initials}</Text>
+                </View>
+
+                <View style={styles.studentMeta}>
+                  <View style={styles.studentNameRow}>
+                    <Text style={styles.studentName}>{student.fullName}</Text>
+                    <Text style={styles.matricNo}>({student.matricNo || 'No matric'})</Text>
+                  </View>
+                  <Text style={styles.deptText}>Dept: {student.department || 'Not provided'}</Text>
+                  <Text style={styles.placementText}>Firm: {student.organizationName || 'Not provided'}</Text>
+                </View>
+              </View>
+
+              <View style={styles.divider} />
+              
+              <View style={styles.actionsRow}>
+                <View style={styles.statusGroup}>
+                  <Text style={styles.statusLabel}>AI Status:</Text>
+                  <View style={styles.healthBadge}>
+                    <View
+                      style={[
+                        styles.ledIndicator,
+                        healthIndicator === 'COMPLIANT'
+                          ? styles.ledGreen
+                          : healthIndicator === 'WARNING'
+                          ? styles.ledYellow
+                          : styles.ledRed,
+                      ]}
+                    />
+                    <Text style={styles.healthText}>{healthIndicator}</Text>
+                  </View>
+                </View>
+
+                <View style={styles.btnGroup}>
+                  <TouchableOpacity
+                    onPress={() => {
+                      setSelectedStudentId(student.id);
+                      onJoinCall();
+                    }}
+                    style={styles.callBtn}
+                    activeOpacity={0.8}
+                  >
+                    <MaterialIcons name="videocam" size={14} color="#261a00" />
+                    <Text style={styles.callBtnText}>Call</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    onPress={() => {
+                      setSelectedStudentId(student.id);
+                      onSelectStudent(student.id);
+                    }}
+                    style={styles.reviewBtn}
+                    activeOpacity={0.8}
+                  >
+                    <MaterialIcons name="rate-review" size={14} color="#ffffff" />
+                    <Text style={styles.reviewBtnText}>Review</Text>
+                  </TouchableOpacity>
+                </View>
               </View>
             </View>
-
-            <View style={styles.btnGroup}>
-              <TouchableOpacity onPress={onJoinCall} style={styles.callBtn} activeOpacity={0.8}>
-                <MaterialIcons name="videocam" size={14} color="#261a00" />
-                <Text style={styles.callBtnText}>Call</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                onPress={() => onSelectStudent(studentProfile.id)}
-                style={styles.reviewBtn}
-                activeOpacity={0.8}
-              >
-                <MaterialIcons name="rate-review" size={14} color="#ffffff" />
-                <Text style={styles.reviewBtnText}>Review</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
+          );
+        })}
       </View>
     </ScrollView>
   );
@@ -252,6 +281,25 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255,255,255,0.05)',
     padding: 12,
     gap: 12,
+  },
+  emptyCard: {
+    backgroundColor: '#0a100c',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.05)',
+    padding: 18,
+    alignItems: 'center',
+    gap: 8,
+  },
+  emptyTitle: {
+    color: '#ffffff',
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
+  emptyText: {
+    color: '#c0c9c0',
+    fontSize: 11,
+    textAlign: 'center',
   },
   studentInfoRow: {
     flexDirection: 'row',

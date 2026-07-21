@@ -5,57 +5,117 @@ import { useSIWES } from '../../context/SIWESContext';
 import { useAuth } from '../../context/AuthContext';
 
 export const SettingsTab: React.FC = () => {
-  const { studentProfile } = useSIWES();
+  const { studentProfile, supervisorProfile, userRole, currentUserName } = useSIWES();
   const { signOut } = useAuth();
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <Text style={styles.headerTitle}>User & Device Settings</Text>
 
-      {/* Profile summary card */}
-      <View style={styles.card}>
-        <Text style={styles.cardLabel}>Identity Information</Text>
-        <View style={styles.profileRow}>
-          <View style={styles.avatarCircle}>
-            <Text style={styles.avatarText}>
-              {studentProfile.fullName ? studentProfile.fullName.substring(0, 2).toUpperCase() : 'ST'}
-            </Text>
+      {userRole === 'STUDENT' && (
+        <>
+          {/* Profile summary card */}
+          <View style={styles.card}>
+            <Text style={styles.cardLabel}>Identity Information</Text>
+            <View style={styles.profileRow}>
+              <View style={styles.avatarCircle}>
+                <Text style={styles.avatarText}>
+                  {studentProfile?.fullName ? studentProfile.fullName.substring(0, 2).toUpperCase() : 'ST'}
+                </Text>
+              </View>
+              <View>
+                <Text style={styles.profileName}>{studentProfile?.fullName || currentUserName}</Text>
+                <Text style={styles.matricText}>Matric: {studentProfile?.matricNo || 'Not provided'}</Text>
+              </View>
+            </View>
+
+            <View style={styles.divider} />
+
+            <View style={styles.metaRow}>
+              <Text style={styles.metaLabel}>Academic Dept:</Text>
+              <Text style={styles.metaValue}>{studentProfile?.department || 'Not provided'}</Text>
+            </View>
           </View>
-          <View>
-            <Text style={styles.profileName}>{studentProfile.fullName}</Text>
-            <Text style={styles.matricText}>Matric: {studentProfile.matricNo}</Text>
+
+          {/* Placement information */}
+          <View style={styles.card}>
+            <Text style={styles.cardLabel}>SIWES Placement Information</Text>
+            
+            <View style={styles.metaRow}>
+              <Text style={styles.metaLabel}>Firm Name:</Text>
+              <Text style={styles.metaValue}>{studentProfile?.organizationName || 'Not provided'}</Text>
+            </View>
+
+            <View style={styles.metaRow}>
+              <Text style={styles.metaLabel}>Address:</Text>
+              <Text style={styles.metaValue}>{studentProfile?.organizationAddress || 'Not provided'}</Text>
+            </View>
+
+            <View style={styles.metaRow}>
+              <Text style={styles.metaLabel}>Office Coordinates:</Text>
+              <Text style={styles.coords}>
+                Lat: {studentProfile?.latitude ?? 'N/A'}, Lon: {studentProfile?.longitude ?? 'N/A'}
+              </Text>
+            </View>
+          </View>
+        </>
+      )}
+
+      {userRole === 'SUPERVISOR' && (
+        <View style={styles.card}>
+          <Text style={styles.cardLabel}>Supervisor Profile</Text>
+          <View style={styles.profileRow}>
+            <View style={styles.avatarCircle}>
+              <Text style={styles.avatarText}>
+                {supervisorProfile?.fullName ? supervisorProfile.fullName.substring(0, 2).toUpperCase() : 'SP'}
+              </Text>
+            </View>
+            <View>
+              <Text style={styles.profileName}>{supervisorProfile?.fullName || currentUserName}</Text>
+              <Text style={styles.matricText}>Staff ID: {supervisorProfile?.staffId || 'Not provided'}</Text>
+            </View>
+          </View>
+
+          <View style={styles.divider} />
+
+          <View style={styles.metaRow}>
+            <Text style={styles.metaLabel}>Department:</Text>
+            <Text style={styles.metaValue}>{supervisorProfile?.department || 'Not provided'}</Text>
+          </View>
+
+          <View style={styles.metaRow}>
+            <Text style={styles.metaLabel}>Designation:</Text>
+            <Text style={styles.metaValue}>{supervisorProfile?.designation || 'Not provided'}</Text>
           </View>
         </View>
+      )}
 
-        <View style={styles.divider} />
+      {userRole === 'ADMIN' && (
+        <View style={styles.card}>
+          <Text style={styles.cardLabel}>Administrator Profile</Text>
+          <View style={styles.profileRow}>
+            <View style={styles.avatarCircle}>
+              <Text style={styles.avatarText}>AD</Text>
+            </View>
+            <View>
+              <Text style={styles.profileName}>{currentUserName}</Text>
+              <Text style={styles.matricText}>Role: Administrator</Text>
+            </View>
+          </View>
 
-        <View style={styles.metaRow}>
-          <Text style={styles.metaLabel}>Academic Dept:</Text>
-          <Text style={styles.metaValue}>{studentProfile.department}</Text>
+          <View style={styles.divider} />
+
+          <View style={styles.metaRow}>
+            <Text style={styles.metaLabel}>Office / Directorate:</Text>
+            <Text style={styles.metaValue}>Not provided</Text>
+          </View>
+
+          <View style={styles.metaRow}>
+            <Text style={styles.metaLabel}>Access Scope:</Text>
+            <Text style={styles.metaValue}>Administrative portal</Text>
+          </View>
         </View>
-      </View>
-
-      {/* Placement information */}
-      <View style={styles.card}>
-        <Text style={styles.cardLabel}>SIWES Placement Information</Text>
-        
-        <View style={styles.metaRow}>
-          <Text style={styles.metaLabel}>Firm Name:</Text>
-          <Text style={styles.metaValue}>{studentProfile.organizationName}</Text>
-        </View>
-
-        <View style={styles.metaRow}>
-          <Text style={styles.metaLabel}>Address:</Text>
-          <Text style={styles.metaValue}>{studentProfile.organizationAddress}</Text>
-        </View>
-
-        <View style={styles.metaRow}>
-          <Text style={styles.metaLabel}>Office Coordinates:</Text>
-          <Text style={styles.coords}>
-            Lat: {studentProfile.latitude}, Lon: {studentProfile.longitude}
-          </Text>
-        </View>
-      </View>
+      )}
 
       {/* Log Out Actions */}
       <TouchableOpacity onPress={signOut} style={styles.logoutBtn} activeOpacity={0.8}>

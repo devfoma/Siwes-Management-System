@@ -1,203 +1,294 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import type { UserRole, StudentProfile, SupervisorProfile, LogbookEntry, SupervisionSession, SupervisorStatus, AIStatus } from '../interfaces/types';
-import { analyzeLogbookWithGemma } from '../utils/mockGemma';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import type { RealtimeChannel } from '@supabase/supabase-js';
 import { useAuth } from './AuthContext';
+import type { AIStatus, LogbookEntry, SupervisionSession, SupervisorStatus, UserRole } from '../interfaces/types';
+import {
+  createLogbookEntry,
+  createSupervisionSession,
+  AdminSupervisor,
+  assignSupervisorToStudentRecord,
+  createSupervisorAccountRequest,
+  DynamicStudentProfile,
+  DynamicSupervisorProfile,
+  ensureCurrentUserProfile,
+  loadAllStudents,
+  loadAllSupervisors,
+  loadAssignedStudents,
+  loadLogbookEntries,
+  loadStudentProfile,
+  loadSupervisorProfile,
+  loadSupervisionSessions,
+  saveLogbookReview,
+  subscribeToWorkspaceChanges,
+} from '../services/siwesRepository';
+import type { AIAnalysisResult } from '../services/aiService';
+import { supabase } from '../utils/supabase';
 
-// Extend profile interfaces to carry full name for dynamic UIs
-export interface DynamicStudentProfile extends StudentProfile {
-  fullName: string;
-}
-
-export interface DynamicSupervisorProfile extends SupervisorProfile {
-  fullName: string;
-}
+export type { AdminSupervisor, DynamicStudentProfile, DynamicSupervisorProfile } from '../services/siwesRepository';
 
 interface SIWESContextType {
+  loadingData: boolean;
+  dataError: string;
+  currentUserId: string | null;
+  currentUserName: string;
   userRole: UserRole;
-  studentProfile: DynamicStudentProfile;
-  supervisorProfile: DynamicSupervisorProfile;
+  studentProfile: DynamicStudentProfile | null;
+  supervisorProfile: DynamicSupervisorProfile | null;
+  assignedStudents: DynamicStudentProfile[];
+  studentsList: DynamicStudentProfile[];
+  supervisorsList: AdminSupervisor[];
+  activeStudentProfile: DynamicStudentProfile | null;
+  selectedStudentId: string | null;
   logbookEntries: LogbookEntry[];
   supervisionSessions: SupervisionSession[];
-  toggleUserRole: () => void;
-  addLogbookEntry: (tasksPerformed: string, skillsAcquired: string, date: string, imageUrl?: string) => LogbookEntry;
-  updateLogbookStatus: (entryId: string, status: SupervisorStatus, feedback: string) => void;
-  scheduleSession: (dateTime: string) => void;
+  setSelectedStudentId: (studentId: string | null) => void;
+  refreshData: () => Promise<void>;
+  addLogbookEntry: (
+    tasksPerformed: string,
+    skillsAcquired: string,
+    date: string,
+    imageUrl?: string,
+    aiResult?: AIAnalysisResult
+  ) => Promise<LogbookEntry>;
+  updateLogbookStatus: (entryId: string, status: SupervisorStatus, feedback: string) => Promise<void>;
+  scheduleSession: (dateTime: string, studentId?: string, notes?: string) => Promise<SupervisionSession>;
+  addSupervisor: (
+    fullName: string,
+    staffId: string,
+    department: string,
+    designation: string,
+    supervisorType: 'ACADEMIC' | 'INDUSTRY'
+  ) => Promise<void>;
+  assignSupervisorToStudent: (studentId: string, supervisorId: string) => Promise<void>;
 }
-
-const initialLogs: LogbookEntry[] = [
-  {
-    id: 'log-1',
-    studentId: 'student-faith',
-    entryDate: '2026-07-10',
-    tasksPerformed: 'Assisted in configuration and setup of local network switches. Set up subnetting masks for 50 workstations in the lab.',
-    skillsAcquired: 'Subnetting, Router configuration, LAN installation.',
-    aiStatus: 'COMPLIANT',
-    aiSummary: 'High-quality technical entry details network addressing and device configuration.',
-    aiDetails: {
-      qualityRating: 'Good',
-      technicalSkills: ['Computer Network Configuration', 'Router & Switch Configuration'],
-      flags: [],
-      suggestedComment: 'Excellent practical application of networking principles. Keep building on this experience.'
-    },
-    supervisorStatus: 'APPROVED',
-    supervisorFeedback: 'Well documented work on network configuration. Make sure you understand the difference between public and private IP ranges in practice.',
-    submittedAt: '2026-07-10T16:30:00Z'
-  },
-  {
-    id: 'log-2',
-    studentId: 'student-faith',
-    entryDate: '2026-07-13',
-    tasksPerformed: 'Helped check some computer cables in the room. Some were broken and we crimped new RJ45 connectors.',
-    skillsAcquired: 'Cable crimping.',
-    aiStatus: 'WARNING',
-    aiSummary: 'Short entry description with limited technical explanation of networking tasks.',
-    aiDetails: {
-      qualityRating: 'Medium',
-      technicalSkills: ['LAN Cable Crimping & Testing', 'Hardware Troubleshooting'],
-      flags: ['Warning: Describe the tools and cable standards (e.g., Cat5e, Cat6, T568B) used for crimping.'],
-      suggestedComment: 'Please specify the category of cables and the standard wiring color codes used.'
-    },
-    supervisorStatus: 'PENDING',
-    submittedAt: '2026-07-13T17:15:00Z'
-  },
-  {
-    id: 'log-3',
-    studentId: 'student-faith',
-    entryDate: '2026-07-14',
-    tasksPerformed: 'Cleaned the server room and watched senior engineers set up the server. Did nothing else.',
-    skillsAcquired: 'Observation.',
-    aiStatus: 'CRITICAL',
-    aiSummary: 'Extremely poor report detail; flags passive activity and lacks active engagement or learning.',
-    aiDetails: {
-      qualityRating: 'Poor',
-      technicalSkills: ['General IT Support'],
-      flags: [
-        'Critical: The log reports passive observation without active hands-on tasks.',
-        'Low Detail: Provide description of the server configurations (OS, hardware specs, roles setup).'
-      ],
-      suggestedComment: 'SIWES requires active learning. Please request hands-on tasks from your industry guide, and describe what server features you configured or tested.'
-    },
-    supervisorStatus: 'PENDING',
-    submittedAt: '2026-07-14T11:00:00Z'
-  }
-];
-
-const initialSessions: SupervisionSession[] = [
-  {
-    id: 'session-1',
-    studentId: 'student-faith',
-    supervisorId: 'supervisor-charity',
-    scheduledTime: '2026-07-15T10:00',
-    roomId: 'ROOM-CS-2022-224',
-    sessionStatus: 'SCHEDULED',
-    notes: 'Mid-term evaluation and placement verification call.'
-  }
-];
 
 const SIWESContext = createContext<SIWESContextType | undefined>(undefined);
 
 export const SIWESProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user } = useAuth();
+  const [loadingData, setLoadingData] = useState<boolean>(false);
+  const [dataError, setDataError] = useState<string>('');
   const [userRole, setUserRole] = useState<UserRole>('STUDENT');
-  const [logbookEntries, setLogbookEntries] = useState<LogbookEntry[]>(initialLogs);
-  const [supervisionSessions, setSupervisionSessions] = useState<SupervisionSession[]>(initialSessions);
+  const [studentProfile, setStudentProfile] = useState<DynamicStudentProfile | null>(null);
+  const [supervisorProfile, setSupervisorProfile] = useState<DynamicSupervisorProfile | null>(null);
+  const [assignedStudents, setAssignedStudents] = useState<DynamicStudentProfile[]>([]);
+  const [studentsList, setStudentsList] = useState<DynamicStudentProfile[]>([]);
+  const [supervisorsList, setSupervisorsList] = useState<AdminSupervisor[]>([]);
+  const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
+  const [logbookEntries, setLogbookEntries] = useState<LogbookEntry[]>([]);
+  const [supervisionSessions, setSupervisionSessions] = useState<SupervisionSession[]>([]);
 
-  // Sync user role status from authenticated Supabase user metadata
-  useEffect(() => {
-    if (user?.user_metadata?.role) {
-      setUserRole(user.user_metadata.role);
+  const refreshData = useCallback(async () => {
+    if (!user) {
+      setStudentProfile(null);
+      setSupervisorProfile(null);
+      setAssignedStudents([]);
+      setStudentsList([]);
+      setSupervisorsList([]);
+      setSelectedStudentId(null);
+      setLogbookEntries([]);
+      setSupervisionSessions([]);
+      return;
     }
-  }, [user]);
 
-  // Construct Dynamic profiles using logged in Supabase attributes
-  const studentProfile: DynamicStudentProfile = {
-    id: user?.id || 'student-faith',
-    userId: user?.id || 'user-student',
-    fullName: user?.user_metadata?.full_name || 'Faith Amarachi',
-    matricNo: user?.user_metadata?.role_data?.matricNo || '2022 224 152',
-    department: user?.user_metadata?.role_data?.department || 'Computer Science',
-    organizationName: user?.user_metadata?.role_data?.organizationName || 'Stitch Emerald Technologies',
-    organizationAddress: user?.user_metadata?.role_data?.organizationAddress || '12 Awolowo Road, Ikoyi, Lagos, Nigeria',
-    latitude: 6.4483,
-    longitude: 3.4184,
-    supervisorId: 'supervisor-charity'
-  };
+    setLoadingData(true);
+    setDataError('');
 
-  const supervisorProfile: DynamicSupervisorProfile = {
-    id: user?.id || 'supervisor-charity',
-    userId: user?.id || 'user-supervisor',
-    fullName: user?.user_metadata?.full_name || 'Dr. Charity',
-    staffId: user?.user_metadata?.role_data?.staffId || 'COOU/CS/2018/042',
-    department: user?.user_metadata?.role_data?.department || 'Computer Science',
-    designation: user?.user_metadata?.role_data?.designation || 'Senior Lecturer / SIWES Coordinator'
-  };
+    try {
+      const profile = await ensureCurrentUserProfile(user);
+      setUserRole(profile.role);
 
-  const toggleUserRole = () => {
-    setUserRole(prev => (prev === 'STUDENT' ? 'SUPERVISOR' : 'STUDENT'));
-  };
+      let student: DynamicStudentProfile | null = null;
+      let supervisor: DynamicSupervisorProfile | null = null;
+      let students: DynamicStudentProfile[] = [];
+      let allStudents: DynamicStudentProfile[] = [];
+      let allSupervisors: AdminSupervisor[] = [];
 
-  const addLogbookEntry = (tasksPerformed: string, skillsAcquired: string, date: string, imageUrl?: string): LogbookEntry => {
-    const aiResult = analyzeLogbookWithGemma(tasksPerformed, skillsAcquired);
-    
-    let aiStatus: AIStatus = 'COMPLIANT';
-    if (aiResult.qualityRating === 'Poor') aiStatus = 'CRITICAL';
-    else if (aiResult.qualityRating === 'Medium') aiStatus = 'WARNING';
+      if (profile.role === 'STUDENT') {
+        student = await loadStudentProfile(user.id);
+      } else if (profile.role === 'SUPERVISOR') {
+        supervisor = await loadSupervisorProfile(user.id);
+        students = await loadAssignedStudents(user.id);
+      } else if (profile.role === 'ADMIN') {
+        allStudents = await loadAllStudents();
+        allSupervisors = await loadAllSupervisors();
+      }
 
-    const newEntry: LogbookEntry = {
-      id: `log-${Date.now()}`,
-      studentId: studentProfile.id,
+      const effectiveSelectedStudentId =
+        profile.role === 'STUDENT'
+          ? user.id
+          : selectedStudentId && students.some((item) => item.id === selectedStudentId)
+          ? selectedStudentId
+          : students[0]?.id || null;
+
+      const logs = await loadLogbookEntries(
+        profile.role,
+        user.id,
+        profile.role === 'SUPERVISOR' ? students.map((item) => item.id) : []
+      );
+      const sessions = await loadSupervisionSessions(
+        profile.role,
+        user.id,
+        profile.role === 'SUPERVISOR' ? students.map((item) => item.id) : []
+      );
+
+      setStudentProfile(student);
+      setSupervisorProfile(supervisor);
+      setAssignedStudents(students);
+      setStudentsList(profile.role === 'ADMIN' ? allStudents : students);
+      setSupervisorsList(profile.role === 'ADMIN' ? allSupervisors : []);
+      setSelectedStudentId(effectiveSelectedStudentId);
+      setLogbookEntries(logs);
+      setSupervisionSessions(sessions);
+    } catch (error: any) {
+      setDataError(error.message || 'Unable to load SIWES data.');
+    } finally {
+      setLoadingData(false);
+    }
+  }, [selectedStudentId, user]);
+
+  useEffect(() => {
+    let channel: RealtimeChannel | null = null;
+
+    refreshData();
+
+    if (user) {
+      channel = subscribeToWorkspaceChanges(() => {
+        refreshData();
+      });
+    }
+
+    return () => {
+      if (channel) {
+        supabase.removeChannel(channel);
+      }
+    };
+  }, [refreshData, user]);
+
+  const activeStudentProfile = useMemo(() => {
+    if (userRole === 'STUDENT') return studentProfile;
+    return assignedStudents.find((student) => student.id === selectedStudentId) || null;
+  }, [assignedStudents, selectedStudentId, studentProfile, userRole]);
+
+  const currentUserName =
+    userRole === 'STUDENT'
+      ? studentProfile?.fullName || user?.email || 'Student'
+      : supervisorProfile?.fullName || user?.email || 'Supervisor';
+
+  const addLogbookEntry = async (
+    tasksPerformed: string,
+    skillsAcquired: string,
+    date: string,
+    imageUrl?: string,
+    aiResult?: AIAnalysisResult
+  ): Promise<LogbookEntry> => {
+    if (!user || userRole !== 'STUDENT') {
+      throw new Error('Only authenticated students can submit logbook entries.');
+    }
+
+    const entry = await createLogbookEntry({
+      studentId: user.id,
       entryDate: date,
       tasksPerformed,
       skillsAcquired,
       imageUrl,
-      aiStatus,
-      aiSummary: aiResult.flags.length > 0 
-        ? aiResult.flags[0] 
-        : 'Detailed report with clear technical content.',
-      aiDetails: aiResult,
-      supervisorStatus: 'PENDING',
-      submittedAt: new Date().toISOString()
-    };
+      aiStatus: aiResult?.status || ('PENDING' as AIStatus),
+      aiSummary: aiResult?.summary,
+      aiDetails: aiResult
+        ? {
+            qualityRating: aiResult.qualityRating,
+            technicalSkills: aiResult.technicalSkills,
+            flags: aiResult.flags,
+            suggestedComment: aiResult.suggestedComment,
+          }
+        : undefined,
+    });
 
-    setLogbookEntries(prev => [newEntry, ...prev]);
-    return newEntry;
+    await refreshData();
+    return entry;
   };
 
-  const updateLogbookStatus = (entryId: string, status: SupervisorStatus, feedback: string) => {
-    setLogbookEntries(prev =>
-      prev.map(entry =>
-        entry.id === entryId
-          ? { ...entry, supervisorStatus: status, supervisorFeedback: feedback }
-          : entry
-      )
-    );
+  const updateLogbookStatus = async (
+    entryId: string,
+    status: SupervisorStatus,
+    feedback: string
+  ): Promise<void> => {
+    await saveLogbookReview(entryId, status, feedback);
+    await refreshData();
   };
 
-  const scheduleSession = (dateTime: string) => {
-    const newSession: SupervisionSession = {
-      id: `session-${Date.now()}`,
-      studentId: studentProfile.id,
-      supervisorId: supervisorProfile.id,
+  const scheduleSession = async (
+    dateTime: string,
+    studentId?: string,
+    notes?: string
+  ): Promise<SupervisionSession> => {
+    const targetStudentId = studentId || activeStudentProfile?.id;
+    const supervisorId =
+      userRole === 'SUPERVISOR'
+        ? user?.id
+        : activeStudentProfile?.supervisorId || supervisionSessions[0]?.supervisorId;
+
+    if (!targetStudentId || !supervisorId) {
+      throw new Error('A student and supervisor are required before scheduling a supervision session.');
+    }
+
+    const session = await createSupervisionSession({
+      studentId: targetStudentId,
+      supervisorId,
       scheduledTime: dateTime,
-      roomId: `ROOM-CS-${Math.floor(1000 + Math.random() * 9000)}`,
-      sessionStatus: 'SCHEDULED',
-      notes: 'Scheduled evaluation session'
-    };
-    setSupervisionSessions(prev => [newSession, ...prev]);
+      notes,
+    });
+
+    await refreshData();
+    return session;
+  };
+
+  const addSupervisor = async (
+    fullName: string,
+    staffId: string,
+    department: string,
+    designation: string,
+    supervisorType: 'ACADEMIC' | 'INDUSTRY'
+  ): Promise<void> => {
+    await createSupervisorAccountRequest({
+      fullName,
+      staffId,
+      department,
+      designation,
+      supervisorType,
+    });
+    await refreshData();
+  };
+
+  const assignSupervisorToStudent = async (studentId: string, supervisorId: string): Promise<void> => {
+    await assignSupervisorToStudentRecord(studentId, supervisorId);
+    await refreshData();
   };
 
   return (
     <SIWESContext.Provider
       value={{
+        loadingData,
+        dataError,
+        currentUserId: user?.id || null,
+        currentUserName,
         userRole,
         studentProfile,
         supervisorProfile,
+        assignedStudents,
+        studentsList,
+        supervisorsList,
+        activeStudentProfile,
+        selectedStudentId,
         logbookEntries,
         supervisionSessions,
-        toggleUserRole,
+        setSelectedStudentId,
+        refreshData,
         addLogbookEntry,
         updateLogbookStatus,
-        scheduleSession
+        scheduleSession,
+        addSupervisor,
+        assignSupervisorToStudent,
       }}
     >
       {children}
@@ -208,7 +299,7 @@ export const SIWESProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 export const useSIWES = () => {
   const context = useContext(SIWESContext);
   if (!context) {
-    throw new Error('useSIWES must be used within a SIWESProvider');
+    throw new Error('useSIWES must be used within an SIWESProvider');
   }
   return context;
 };

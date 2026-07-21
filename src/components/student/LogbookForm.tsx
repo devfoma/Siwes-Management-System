@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useSIWES } from '../../context/SIWESContext';
-import { analyzeLogbookWithGemma, type AIAnalysisResult } from '../../utils/mockGemma';
+import { analyzeLogbookEntry, type AIAnalysisResult } from '../../services/aiService';
 
 interface LogbookFormProps {
   onBack: () => void;
@@ -13,15 +13,17 @@ export const LogbookForm: React.FC<LogbookFormProps> = ({ onBack }) => {
   const [date, setDate] = useState<string>(new Date().toISOString().split('T')[0]);
   const [tasks, setTasks] = useState<string>('');
   const [skills, setSkills] = useState<string>('');
+  const [imageUrl, setImageUrl] = useState<string>('');
   
   const [isAnalyzing, setIsAnalyzing] = useState<boolean>(false);
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [aiResult, setAiResult] = useState<AIAnalysisResult | null>(null);
   const [aiChecked, setAiChecked] = useState<boolean>(false);
 
   const [errorMsg, setErrorMsg] = useState<string>('');
   const [successMsg, setSuccessMsg] = useState<boolean>(false);
 
-  const handleAIReview = () => {
+  const handleAIReview = async () => {
     if (!tasks.trim()) {
       setErrorMsg('Please write some details in the tasks performed text box first.');
       return;
@@ -29,25 +31,35 @@ export const LogbookForm: React.FC<LogbookFormProps> = ({ onBack }) => {
     setErrorMsg('');
     setIsAnalyzing(true);
     
-    setTimeout(() => {
-      const result = analyzeLogbookWithGemma(tasks, skills);
+    try {
+      const result = await analyzeLogbookEntry(tasks, skills);
       setAiResult(result);
-      setIsAnalyzing(false);
       setAiChecked(true);
-    }, 1200);
+    } catch (e: any) {
+      setErrorMsg(e.message || 'Error evaluating entry with the AI service.');
+    } finally {
+      setIsAnalyzing(false);
+    }
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!tasks.trim() || !skills.trim()) {
       setErrorMsg('All fields are required. Please fill in tasks performed and skills.');
       return;
     }
 
-    addLogbookEntry(tasks, skills, date);
-    setSuccessMsg(true);
-    setTimeout(() => {
-      onBack();
-    }, 1500);
+    setErrorMsg('');
+    setIsSubmitting(true);
+    try {
+      await addLogbookEntry(tasks, skills, date, imageUrl.trim() || undefined, aiResult || undefined);
+      setSuccessMsg(true);
+      setTimeout(() => {
+        onBack();
+      }, 1500);
+    } catch (e: any) {
+      setErrorMsg(e.message || 'Error submitting logbook entry.');
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -65,7 +77,7 @@ export const LogbookForm: React.FC<LogbookFormProps> = ({ onBack }) => {
           <MaterialIcons name="check-circle" size={48} color="#77da9f" style={styles.successIcon} />
           <Text style={styles.successTitle}>Logbook Submitted!</Text>
           <Text style={styles.successDesc}>
-            Your daily entry has been recorded and evaluated by Gemma AI. It is now pending coordinator verification.
+            Your daily entry has been recorded. It is now pending supervisor verification.
           </Text>
         </View>
       ) : (
@@ -84,13 +96,17 @@ export const LogbookForm: React.FC<LogbookFormProps> = ({ onBack }) => {
             </View>
           </View>
 
-          {/* Verification Photo Mockup */}
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Workplace Verification Photo</Text>
-            <View style={styles.recessedImageBadge}>
-              <MaterialIcons name="photo" size={16} color="#77da9f" />
-              <Text style={styles.imageBadgeText}>workplace_proof_today.jpg</Text>
-              <Text style={styles.attachedText}>Attached</Text>
+            <Text style={styles.label}>Workplace Evidence URL</Text>
+            <View style={styles.recessedInput}>
+              <TextInput
+                value={imageUrl}
+                onChangeText={setImageUrl}
+                placeholder="https://example.com/photo-or-document.jpg"
+                placeholderTextColor="#666"
+                autoCapitalize="none"
+                style={styles.textInput}
+              />
             </View>
           </View>
 
@@ -145,13 +161,22 @@ export const LogbookForm: React.FC<LogbookFormProps> = ({ onBack }) => {
               ) : (
                 <>
                   <MaterialIcons name="smart-toy" size={16} color="#261a00" />
-                  <Text style={styles.aiBtnText}>Review with Gemma AI</Text>
+                  <Text style={styles.aiBtnText}>Review with AI</Text>
                 </>
               )}
             </TouchableOpacity>
 
-            <TouchableOpacity onPress={handleSubmit} style={styles.submitBtn} activeOpacity={0.8}>
-              <Text style={styles.submitBtnText}>Submit Entry</Text>
+            <TouchableOpacity 
+              onPress={handleSubmit} 
+              style={styles.submitBtn} 
+              activeOpacity={0.8}
+              disabled={isSubmitting || isAnalyzing}
+            >
+              {isSubmitting ? (
+                <ActivityIndicator size="small" color="#0f1511" />
+              ) : (
+                <Text style={styles.submitBtnText}>Submit Entry</Text>
+              )}
             </TouchableOpacity>
           </View>
 
@@ -160,7 +185,7 @@ export const LogbookForm: React.FC<LogbookFormProps> = ({ onBack }) => {
             <View style={styles.aiHelperBox}>
               <View style={styles.aiHeader}>
                 <MaterialIcons name="psychology" size={16} color="#77da9f" />
-                <Text style={styles.aiTitle}>Ollama Gemma Evaluator Output</Text>
+                <Text style={styles.aiTitle}>AI Evaluator Output</Text>
               </View>
 
               <View style={styles.aiMeta}>

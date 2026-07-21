@@ -31,10 +31,10 @@ export const DailyLogsTab: React.FC<DailyLogsTabProps> = ({ onAddLog }) => {
     let doc = `=========================================\n`;
     doc += `      SIWES SYSTEM LOG REPORT EXPORT     \n`;
     doc += `=========================================\n`;
-    doc += `STUDENT: ${studentProfile.fullName}\n`;
-    doc += `MATRIC NO: ${studentProfile.matricNo}\n`;
-    doc += `DEPARTMENT: ${studentProfile.department}\n`;
-    doc += `ORGANIZATION: ${studentProfile.organizationName}\n`;
+    doc += `STUDENT: ${studentProfile?.fullName || 'Not provided'}\n`;
+    doc += `MATRIC NO: ${studentProfile?.matricNo || 'Not provided'}\n`;
+    doc += `DEPARTMENT: ${studentProfile?.department || 'Not provided'}\n`;
+    doc += `ORGANIZATION: ${studentProfile?.organizationName || 'Not provided'}\n`;
     doc += `EXPORT DATE: ${new Date().toISOString().split('T')[0]}\n`;
     doc += `=========================================\n\n`;
 
@@ -88,6 +88,14 @@ export const DailyLogsTab: React.FC<DailyLogsTabProps> = ({ onAddLog }) => {
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
+        {logbookEntries.length === 0 && (
+          <View style={styles.emptyCard}>
+            <MaterialIcons name="menu-book" size={28} color="#77da9f" />
+            <Text style={styles.emptyTitle}>No logbook entries yet</Text>
+            <Text style={styles.emptyText}>Create your first SIWES entry to begin building your official record.</Text>
+          </View>
+        )}
+
         {logbookEntries.map((entry) => {
           const isExpanded = expandedLogId === entry.id;
           return (
@@ -288,6 +296,26 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#0f5132',
     overflow: 'hidden',
+  },
+  emptyCard: {
+    backgroundColor: '#1b211d',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#0f5132',
+    padding: 18,
+    alignItems: 'center',
+    gap: 8,
+  },
+  emptyTitle: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#ffffff',
+  },
+  emptyText: {
+    fontSize: 11,
+    color: '#c0c9c0',
+    textAlign: 'center',
+    lineHeight: 16,
   },
   cardHeader: {
     padding: 12,
