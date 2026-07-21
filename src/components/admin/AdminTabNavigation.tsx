@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Modal, FlatList } from 'react-native';
+import { ActivityIndicator, View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Modal, FlatList } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useSIWES, type AdminSupervisor, type DynamicStudentProfile } from '../../context/SIWESContext';
 import { SettingsTab } from '../student/SettingsTab';
@@ -11,6 +11,7 @@ export const AdminTabNavigation: React.FC = () => {
   
   // Bottom Navigation Tabs
   const [activeTab, setActiveTab] = useState<AdminTab>('STUDENTS');
+  const [collapsedFaculties, setCollapsedFaculties] = useState<Record<string, boolean>>({});
   
   // Modal states
   const [showAddSupervisorModal, setShowAddSupervisorModal] = useState<boolean>(false);
@@ -19,11 +20,16 @@ export const AdminTabNavigation: React.FC = () => {
 
   // Form states for new supervisor
   const [supName, setSupName] = useState<string>('');
+  const [supEmail, setSupEmail] = useState<string>('');
+  const [supPassword, setSupPassword] = useState<string>('');
   const [supStaffId, setSupStaffId] = useState<string>('');
+  const [supFaculty, setSupFaculty] = useState<string>('');
   const [supDepartment, setSupDepartment] = useState<string>('');
   const [supDesignation, setSupDesignation] = useState<string>('');
   const [supType, setSupType] = useState<'ACADEMIC' | 'INDUSTRY'>('ACADEMIC');
   const [formError, setFormError] = useState<string>('');
+  const [formSuccess, setFormSuccess] = useState<string>('');
+  const [submittingSupervisor, setSubmittingSupervisor] = useState<boolean>(false);
 
   // Calculate Metrics
   const totalStudents = studentsList.length;
@@ -32,23 +38,45 @@ export const AdminTabNavigation: React.FC = () => {
   const assignmentRate = totalStudents > 0 ? Math.round((assignedStudents / totalStudents) * 100) : 0;
 
   // Handle Register Supervisor Submit
-  const handleRegisterSupervisor = () => {
-    if (!supName.trim() || !supStaffId.trim() || !supDepartment.trim() || !supDesignation.trim()) {
+  const handleRegisterSupervisor = async () => {
+    if (!supName.trim() || !supEmail.trim() || !supPassword.trim() || !supStaffId.trim() || !supFaculty.trim() || !supDepartment.trim() || !supDesignation.trim()) {
       setFormError('All fields are required.');
       return;
     }
+    if (supPassword.trim().length < 6) {
+      setFormError('Password must be at least 6 characters.');
+      return;
+    }
     setFormError('');
-    addSupervisor(supName, supStaffId, supDepartment, supDesignation, supType).catch((error: any) => {
+    setFormSuccess('');
+    setSubmittingSupervisor(true);
+
+    try {
+      const createdEmail = supEmail.trim();
+      const createdPassword = supPassword.trim();
+      await addSupervisor(supName, createdEmail, createdPassword, supStaffId, supFaculty, supDepartment, supDesignation, supType);
+      setFormSuccess(`Supervisor credentials created in Faculty of ${supFaculty.trim()}. Email: ${createdEmail} | Password: ${createdPassword}`);
+
+      // Reset Form
+      setSupName('');
+      setSupEmail('');
+      setSupPassword('');
+      setSupStaffId('');
+      setSupFaculty('');
+      setSupDepartment('');
+      setSupDesignation('');
+      setSupType('ACADEMIC');
+    } catch (error: any) {
       setFormError(error.message || 'Unable to add supervisor.');
-    });
-    
-    // Reset Form
-    setSupName('');
-    setSupStaffId('');
-    setSupDepartment('');
-    setSupDesignation('');
-    setSupType('ACADEMIC');
+    } finally {
+      setSubmittingSupervisor(false);
+    }
+  };
+
+  const closeAddSupervisorModal = () => {
     setShowAddSupervisorModal(false);
+    setFormError('');
+    setFormSuccess('');
   };
 
   // Group Students by Faculty and then Department
@@ -72,6 +100,34 @@ export const AdminTabNavigation: React.FC = () => {
   };
 
   const groupedStudents = getGroupedStudents();
+
+  const getGroupedSupervisors = () => {
+    const grouped: { [faculty: string]: AdminSupervisor[] } = {};
+
+    supervisorsList.forEach(supervisor => {
+      const faculty = supervisor.faculty || 'Uncategorized Faculty';
+
+      if (!grouped[faculty]) {
+        grouped[faculty] = [];
+      }
+      grouped[faculty].push(supervisor);
+    });
+
+    return grouped;
+  };
+
+  const groupedSupervisors = getGroupedSupervisors();
+
+  const isFacultyCollapsed = (scope: 'students' | 'supervisors', faculty: string) =>
+    collapsedFaculties[`${scope}:${faculty}`] === true;
+
+  const toggleFaculty = (scope: 'students' | 'supervisors', faculty: string) => {
+    const key = `${scope}:${faculty}`;
+    setCollapsedFaculties(prev => ({
+      ...prev,
+      [key]: !prev[key],
+    }));
+  };
 
   // Handle opening assignment modal
   const openAssignModal = (student: DynamicStudentProfile) => {
@@ -105,50 +161,66 @@ export const AdminTabNavigation: React.FC = () => {
           
           {Object.keys(groupedStudents).map(faculty => (
             <View key={faculty} style={styles.facultyBlock}>
-              <View style={styles.facultyHeader}>
+              <TouchableOpacity
+                style={styles.facultyHeader}
+                onPress={() => toggleFaculty('students', faculty)}
+                activeOpacity={0.8}
+              >
                 <MaterialIcons name="business" size={18} color="#fabd00" />
                 <Text style={styles.facultyTitle}>Faculty of {faculty}</Text>
-              </View>
+                <Text style={styles.folderCount}>
+                  {Object.values(groupedStudents[faculty]).reduce((total, students) => total + students.length, 0)}
+                </Text>
+                <MaterialIcons
+                  name={isFacultyCollapsed('students', faculty) ? 'chevron-right' : 'expand-more'}
+                  size={20}
+                  color="#fabd00"
+                />
+              </TouchableOpacity>
 
-              {Object.keys(groupedStudents[faculty]).map(dept => (
-                <View key={dept} style={styles.deptBlock}>
-                  <Text style={styles.deptTitle}>Department of {dept}</Text>
-                  
-                  {groupedStudents[faculty][dept].map(student => {
-                    const supervisor = supervisorsList.find(s => s.id === student.supervisorId);
-                    return (
-                      <View key={student.id} style={styles.studentCard}>
-                        <View style={styles.studentInfo}>
-                          <Text style={styles.studentName}>{student.fullName}</Text>
-                          <Text style={styles.studentSub}>Matric: {student.matricNo}</Text>
-                          <Text style={styles.studentSub}>Org: {student.organizationName}</Text>
-                        </View>
-
-                        <View style={styles.assignmentPanel}>
-                          {supervisor ? (
-                            <View style={styles.assignedBadge}>
-                              <View style={[styles.led, styles.ledGreen]} />
-                              <Text style={styles.assignedText}>Assigned: {supervisor.fullName}</Text>
+              {!isFacultyCollapsed('students', faculty) && (
+                <>
+                  {Object.keys(groupedStudents[faculty]).map(dept => (
+                    <View key={dept} style={styles.deptBlock}>
+                      <Text style={styles.deptTitle}>Department of {dept}</Text>
+                      
+                      {groupedStudents[faculty][dept].map(student => {
+                        const supervisor = supervisorsList.find(s => s.id === student.supervisorId);
+                        return (
+                          <View key={student.id} style={styles.studentCard}>
+                            <View style={styles.studentInfo}>
+                              <Text style={styles.studentName}>{student.fullName}</Text>
+                              <Text style={styles.studentSub}>Matric: {student.matricNo}</Text>
+                              <Text style={styles.studentSub}>Org: {student.organizationName}</Text>
                             </View>
-                          ) : (
-                            <View style={styles.unassignedBadge}>
-                              <View style={[styles.led, styles.ledYellow]} />
-                              <Text style={styles.unassignedText}>Unassigned</Text>
-                            </View>
-                          )}
 
-                          <TouchableOpacity 
-                            style={styles.assignBtn}
-                            onPress={() => openAssignModal(student)}
-                          >
-                            <Text style={styles.assignBtnText}>{supervisor ? 'Reassign' : 'Assign Advisor'}</Text>
-                          </TouchableOpacity>
-                        </View>
-                      </View>
-                    );
-                  })}
-                </View>
-              ))}
+                            <View style={styles.assignmentPanel}>
+                              {supervisor ? (
+                                <View style={styles.assignedBadge}>
+                                  <View style={[styles.led, styles.ledGreen]} />
+                                  <Text style={styles.assignedText}>Assigned: {supervisor.fullName}</Text>
+                                </View>
+                              ) : (
+                                <View style={styles.unassignedBadge}>
+                                  <View style={[styles.led, styles.ledYellow]} />
+                                  <Text style={styles.unassignedText}>Unassigned</Text>
+                                </View>
+                              )}
+
+                              <TouchableOpacity 
+                                style={styles.assignBtn}
+                                onPress={() => openAssignModal(student)}
+                              >
+                                <Text style={styles.assignBtnText}>{supervisor ? 'Reassign' : 'Assign Advisor'}</Text>
+                              </TouchableOpacity>
+                            </View>
+                          </View>
+                        );
+                      })}
+                    </View>
+                  ))}
+                </>
+              )}
             </View>
           ))}
         </ScrollView>
@@ -167,21 +239,44 @@ export const AdminTabNavigation: React.FC = () => {
             </TouchableOpacity>
           </View>
 
-          {supervisorsList.map(sup => (
-            <View key={sup.id} style={styles.supCard}>
-              <View style={styles.supHeaderRow}>
-                <View>
-                  <Text style={styles.supName}>{sup.fullName}</Text>
-                  <Text style={styles.supSub}>Staff ID: {sup.staffId}</Text>
-                </View>
-                <View style={[styles.typeBadge, sup.supervisorType === 'ACADEMIC' ? styles.badgeAcademic : styles.badgeIndustry]}>
-                  <Text style={styles.typeBadgeText}>{sup.supervisorType}</Text>
-                </View>
-              </View>
-              <View style={styles.supBody}>
-                <Text style={styles.supDetail}><Text style={styles.boldText}>Dept:</Text> {sup.department}</Text>
-                <Text style={styles.supDetail}><Text style={styles.boldText}>Designation:</Text> {sup.designation}</Text>
-              </View>
+          {Object.keys(groupedSupervisors).map(faculty => (
+            <View key={faculty} style={styles.facultyBlock}>
+              <TouchableOpacity
+                style={styles.facultyHeader}
+                onPress={() => toggleFaculty('supervisors', faculty)}
+                activeOpacity={0.8}
+              >
+                <MaterialIcons name="folder" size={18} color="#fabd00" />
+                <Text style={styles.facultyTitle}>Faculty of {faculty}</Text>
+                <Text style={styles.folderCount}>{groupedSupervisors[faculty].length}</Text>
+                <MaterialIcons
+                  name={isFacultyCollapsed('supervisors', faculty) ? 'chevron-right' : 'expand-more'}
+                  size={20}
+                  color="#fabd00"
+                />
+              </TouchableOpacity>
+
+              {!isFacultyCollapsed('supervisors', faculty) && (
+                <>
+                  {groupedSupervisors[faculty].map(sup => (
+                    <View key={sup.id} style={styles.supCard}>
+                      <View style={styles.supHeaderRow}>
+                        <View>
+                          <Text style={styles.supName}>{sup.fullName}</Text>
+                          <Text style={styles.supSub}>Staff ID: {sup.staffId}</Text>
+                        </View>
+                        <View style={[styles.typeBadge, sup.supervisorType === 'ACADEMIC' ? styles.badgeAcademic : styles.badgeIndustry]}>
+                          <Text style={styles.typeBadgeText}>{sup.supervisorType}</Text>
+                        </View>
+                      </View>
+                      <View style={styles.supBody}>
+                        <Text style={styles.supDetail}><Text style={styles.boldText}>Dept:</Text> {sup.department}</Text>
+                        <Text style={styles.supDetail}><Text style={styles.boldText}>Designation:</Text> {sup.designation}</Text>
+                      </View>
+                    </View>
+                  ))}
+                </>
+              )}
             </View>
           ))}
         </ScrollView>
@@ -272,18 +367,20 @@ export const AdminTabNavigation: React.FC = () => {
         visible={showAddSupervisorModal}
         transparent
         animationType="fade"
-        onRequestClose={() => setShowAddSupervisorModal(false)}
+        onRequestClose={closeAddSupervisorModal}
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalCard}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Register New Supervisor</Text>
-              <TouchableOpacity onPress={() => setShowAddSupervisorModal(false)}>
+              <TouchableOpacity onPress={closeAddSupervisorModal}>
                 <MaterialIcons name="close" size={20} color="#c0c9c0" />
               </TouchableOpacity>
             </View>
 
             {formError ? <Text style={styles.errorText}>⚠️ {formError}</Text> : null}
+
+            {formSuccess ? <Text style={styles.successText}>{formSuccess}</Text> : null}
 
             <ScrollView style={styles.modalBody}>
               <View style={styles.inputGroup}>
@@ -300,12 +397,54 @@ export const AdminTabNavigation: React.FC = () => {
               </View>
 
               <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Login Email</Text>
+                <View style={styles.inputRecess}>
+                  <TextInput
+                    value={supEmail}
+                    onChangeText={setSupEmail}
+                    autoCapitalize="none"
+                    keyboardType="email-address"
+                    placeholder="e.g. supervisor@university.edu.ng"
+                    placeholderTextColor="#666"
+                    style={styles.textInput}
+                  />
+                </View>
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Temporary Password</Text>
+                <View style={styles.inputRecess}>
+                  <TextInput
+                    value={supPassword}
+                    onChangeText={setSupPassword}
+                    autoCapitalize="none"
+                    placeholder="At least 6 characters"
+                    placeholderTextColor="#666"
+                    style={styles.textInput}
+                  />
+                </View>
+              </View>
+
+              <View style={styles.inputGroup}>
                 <Text style={styles.inputLabel}>Staff ID / Code</Text>
                 <View style={styles.inputRecess}>
                   <TextInput 
                     value={supStaffId} 
                     onChangeText={setSupStaffId} 
                     placeholder="e.g. COOU/CS/2018/042" 
+                    placeholderTextColor="#666"
+                    style={styles.textInput}
+                  />
+                </View>
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Faculty</Text>
+                <View style={styles.inputRecess}>
+                  <TextInput 
+                    value={supFaculty} 
+                    onChangeText={setSupFaculty} 
+                    placeholder="e.g. Physical Sciences" 
                     placeholderTextColor="#666"
                     style={styles.textInput}
                   />
@@ -358,8 +497,16 @@ export const AdminTabNavigation: React.FC = () => {
               </View>
             </ScrollView>
 
-            <TouchableOpacity style={styles.modalSubmitBtn} onPress={handleRegisterSupervisor}>
-              <Text style={styles.modalSubmitText}>Save Supervisor Account</Text>
+            <TouchableOpacity
+              style={[styles.modalSubmitBtn, submittingSupervisor && styles.modalSubmitBtnDisabled]}
+              onPress={handleRegisterSupervisor}
+              disabled={submittingSupervisor}
+            >
+              {submittingSupervisor ? (
+                <ActivityIndicator size="small" color="#0f1511" />
+              ) : (
+                <Text style={styles.modalSubmitText}>Create Supervisor Credentials</Text>
+              )}
             </TouchableOpacity>
           </View>
         </View>
@@ -502,9 +649,21 @@ const styles = StyleSheet.create({
     paddingBottom: 8,
   },
   facultyTitle: {
+    flex: 1,
     fontSize: 13,
     fontWeight: 'bold',
     color: '#fabd00',
+  },
+  folderCount: {
+    minWidth: 24,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 12,
+    backgroundColor: 'rgba(250, 189, 0, 0.12)',
+    color: '#fabd00',
+    fontSize: 10,
+    fontWeight: 'bold',
+    textAlign: 'center',
   },
   deptBlock: {
     gap: 8,
@@ -724,6 +883,12 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#ffb4ab',
   },
+  successText: {
+    fontSize: 11,
+    fontWeight: 'bold',
+    color: '#77da9f',
+    lineHeight: 16,
+  },
   inputGroup: {
     gap: 6,
     marginBottom: 14,
@@ -780,6 +945,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 10,
+  },
+  modalSubmitBtnDisabled: {
+    opacity: 0.7,
   },
   modalSubmitText: {
     fontSize: 13,

@@ -17,6 +17,7 @@ interface AuthContextType {
     roleData?: {
       matricNo?: string;
       staffId?: string;
+      faculty?: string;
       department: string;
       organizationName?: string;
       organizationAddress?: string;

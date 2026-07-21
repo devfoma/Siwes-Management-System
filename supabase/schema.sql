@@ -2,20 +2,71 @@ create extension if not exists "pgcrypto";
 
 create table if not exists public.profiles (
   id uuid primary key references auth.users(id) on delete cascade,
-  email text not null,
+  email text,
   full_name text not null,
   role text not null check (role in ('STUDENT', 'SUPERVISOR', 'ADMIN')),
   created_at timestamptz not null default now()
 );
 
+alter table public.profiles
+add column if not exists email text;
+
+update public.profiles p
+set email = u.email
+from auth.users u
+where p.id = u.id
+  and (p.email is null or p.email = '');
+
+create index if not exists profiles_email_idx
+on public.profiles(email);
+
 create table if not exists public.supervisor_profiles (
   user_id uuid primary key references public.profiles(id) on delete cascade,
   staff_id text unique,
+  faculty text,
   department text,
   designation text,
   supervisor_type text not null default 'ACADEMIC' check (supervisor_type in ('ACADEMIC', 'INDUSTRY')),
   created_at timestamptz not null default now()
 );
+
+alter table public.supervisor_profiles
+add column if not exists faculty text;
+
+alter table public.supervisor_profiles
+add column if not exists user_id uuid references public.profiles(id) on delete cascade;
+
+alter table public.supervisor_profiles
+add column if not exists staff_id text;
+
+alter table public.supervisor_profiles
+add column if not exists department text;
+
+alter table public.supervisor_profiles
+add column if not exists designation text;
+
+alter table public.supervisor_profiles
+add column if not exists supervisor_type text not null default 'ACADEMIC';
+
+do $$
+begin
+  if exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public'
+      and table_name = 'supervisor_profiles'
+      and column_name = 'id'
+      and udt_name = 'uuid'
+  ) then
+    execute 'update public.supervisor_profiles set user_id = id where user_id is null';
+  end if;
+end $$;
+
+create unique index if not exists supervisor_profiles_user_id_key
+on public.supervisor_profiles(user_id);
+
+create unique index if not exists supervisor_profiles_staff_id_key
+on public.supervisor_profiles(staff_id)
+where staff_id is not null;
 
 create table if not exists public.student_profiles (
   user_id uuid primary key references public.profiles(id) on delete cascade,
@@ -29,6 +80,53 @@ create table if not exists public.student_profiles (
   supervisor_id uuid references public.profiles(id) on delete set null,
   created_at timestamptz not null default now()
 );
+
+alter table public.student_profiles
+add column if not exists faculty text;
+
+alter table public.student_profiles
+add column if not exists user_id uuid references public.profiles(id) on delete cascade;
+
+alter table public.student_profiles
+add column if not exists matric_no text;
+
+alter table public.student_profiles
+add column if not exists department text;
+
+alter table public.student_profiles
+add column if not exists organization_name text;
+
+alter table public.student_profiles
+add column if not exists organization_address text;
+
+alter table public.student_profiles
+add column if not exists latitude double precision;
+
+alter table public.student_profiles
+add column if not exists longitude double precision;
+
+alter table public.student_profiles
+add column if not exists supervisor_id uuid references public.profiles(id) on delete set null;
+
+do $$
+begin
+  if exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public'
+      and table_name = 'student_profiles'
+      and column_name = 'id'
+      and udt_name = 'uuid'
+  ) then
+    execute 'update public.student_profiles set user_id = id where user_id is null';
+  end if;
+end $$;
+
+create unique index if not exists student_profiles_user_id_key
+on public.student_profiles(user_id);
+
+create unique index if not exists student_profiles_matric_no_key
+on public.student_profiles(matric_no)
+where matric_no is not null;
 
 create table if not exists public.logbook_entries (
   id uuid primary key default gen_random_uuid(),
@@ -89,8 +187,8 @@ language sql
 stable
 as $$
   select exists (
-    select 1 from public.student_profiles
-    where user_id = student_profile_id and supervisor_id = auth.uid()
+    select 1 from public.student_profiles sp
+    where sp.user_id = student_profile_id and sp.supervisor_id = auth.uid()
   );
 $$;
 
@@ -124,26 +222,26 @@ drop policy if exists "student_profiles_select_own_supervisor_admin" on public.s
 create policy "student_profiles_select_own_supervisor_admin"
 on public.student_profiles for select
 to authenticated
-using (user_id = auth.uid() or supervisor_id = auth.uid() or public.is_admin());
+using (student_profiles.user_id = auth.uid() or student_profiles.supervisor_id = auth.uid() or public.is_admin());
 
 drop policy if exists "student_profiles_insert_own" on public.student_profiles;
 create policy "student_profiles_insert_own"
 on public.student_profiles for insert
 to authenticated
-with check (user_id = auth.uid());
+with check (student_profiles.user_id = auth.uid());
 
 drop policy if exists "student_profiles_update_own_or_admin" on public.student_profiles;
 create policy "student_profiles_update_own_or_admin"
 on public.student_profiles for update
 to authenticated
-using (user_id = auth.uid() or public.is_admin())
-with check (user_id = auth.uid() or public.is_admin());
+using (student_profiles.user_id = auth.uid() or public.is_admin())
+with check (student_profiles.user_id = auth.uid() or public.is_admin());
 
 drop policy if exists "supervisor_profiles_select_related" on public.supervisor_profiles;
 create policy "supervisor_profiles_select_related"
 on public.supervisor_profiles for select
 to authenticated
-using (user_id = auth.uid() or public.is_admin());
+using (supervisor_profiles.user_id = auth.uid() or public.is_admin());
 
 drop policy if exists "supervisor_profiles_admin_write" on public.supervisor_profiles;
 create policy "supervisor_profiles_admin_write"

@@ -79,6 +79,11 @@ export const SettingsTab: React.FC = () => {
           <View style={styles.divider} />
 
           <View style={styles.metaRow}>
+            <Text style={styles.metaLabel}>Faculty:</Text>
+            <Text style={styles.metaValue}>{supervisorProfile?.faculty || 'Not provided'}</Text>
+          </View>
+
+          <View style={styles.metaRow}>
             <Text style={styles.metaLabel}>Department:</Text>
             <Text style={styles.metaValue}>{supervisorProfile?.department || 'Not provided'}</Text>
           </View>

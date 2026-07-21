@@ -21,6 +21,7 @@ export const AuthScreen: React.FC = () => {
   // Role details
   const [matricNo, setMatricNo] = useState<string>('');
   const [staffId, setStaffId] = useState<string>('');
+  const [faculty, setFaculty] = useState<string>('');
   const [department, setDepartment] = useState<string>('');
   const [orgName, setOrgName] = useState<string>('');
   const [orgAddress, setOrgAddress] = useState<string>('');
@@ -35,15 +36,15 @@ export const AuthScreen: React.FC = () => {
     setLoading(true);
 
     if (isSignUpMode) {
-      if (!fullName.trim() || !department.trim()) {
-        setErrorMsg('Name and department fields are required.');
+      if (!fullName.trim() || !faculty.trim() || !department.trim()) {
+        setErrorMsg('Name, faculty, and department fields are required.');
         setLoading(false);
         return;
       }
       
       const roleData = role === 'STUDENT' 
-        ? { matricNo, department, organizationName: orgName, organizationAddress: orgAddress }
-        : { staffId, department, designation };
+        ? { matricNo, faculty, department, organizationName: orgName, organizationAddress: orgAddress }
+        : { staffId, faculty, department, designation };
 
       const { error } = await signUp(email, password, fullName, role, roleData);
       if (error) {
@@ -172,6 +173,19 @@ export const AuthScreen: React.FC = () => {
                       value={matricNo}
                       onChangeText={setMatricNo}
                       placeholder="2022 224 152"
+                      placeholderTextColor="#666"
+                      style={styles.textInput}
+                    />
+                  </View>
+                </View>
+
+                <View style={styles.inputGroup}>
+                  <Text style={styles.label}>Faculty</Text>
+                  <View style={styles.recessedInput}>
+                    <TextInput
+                      value={faculty}
+                      onChangeText={setFaculty}
+                      placeholder="Physical Sciences"
                       placeholderTextColor="#666"
                       style={styles.textInput}
                     />

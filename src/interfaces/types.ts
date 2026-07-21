@@ -29,6 +29,7 @@ export interface SupervisorProfile {
   id: string;
   userId: string;
   staffId: string;
+  faculty?: string;
   department: string;
   designation: string;
 }

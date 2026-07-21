@@ -1,4 +1,4 @@
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 import { useAuth } from './AuthContext';
 import type { AIStatus, LogbookEntry, SupervisionSession, SupervisorStatus, UserRole } from '../interfaces/types';
@@ -54,7 +54,10 @@ interface SIWESContextType {
   scheduleSession: (dateTime: string, studentId?: string, notes?: string) => Promise<SupervisionSession>;
   addSupervisor: (
     fullName: string,
+    email: string,
+    password: string,
     staffId: string,
+    faculty: string,
     department: string,
     designation: string,
     supervisorType: 'ACADEMIC' | 'INDUSTRY'
@@ -77,6 +80,12 @@ export const SIWESProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
   const [logbookEntries, setLogbookEntries] = useState<LogbookEntry[]>([]);
   const [supervisionSessions, setSupervisionSessions] = useState<SupervisionSession[]>([]);
+  const selectedStudentIdRef = useRef<string | null>(null);
+  const realtimeRefreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    selectedStudentIdRef.current = selectedStudentId;
+  }, [selectedStudentId]);
 
   const refreshData = useCallback(async () => {
     if (!user) {
@@ -117,8 +126,8 @@ export const SIWESProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       const effectiveSelectedStudentId =
         profile.role === 'STUDENT'
           ? user.id
-          : selectedStudentId && students.some((item) => item.id === selectedStudentId)
-          ? selectedStudentId
+          : selectedStudentIdRef.current && students.some((item) => item.id === selectedStudentIdRef.current)
+          ? selectedStudentIdRef.current
           : students[0]?.id || null;
 
       const logs = await loadLogbookEntries(
@@ -145,7 +154,18 @@ export const SIWESProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     } finally {
       setLoadingData(false);
     }
-  }, [selectedStudentId, user]);
+  }, [user]);
+
+  const requestRealtimeRefresh = useCallback(() => {
+    if (realtimeRefreshTimerRef.current) {
+      clearTimeout(realtimeRefreshTimerRef.current);
+    }
+
+    realtimeRefreshTimerRef.current = setTimeout(() => {
+      realtimeRefreshTimerRef.current = null;
+      refreshData();
+    }, 250);
+  }, [refreshData]);
 
   useEffect(() => {
     let channel: RealtimeChannel | null = null;
@@ -153,17 +173,20 @@ export const SIWESProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     refreshData();
 
     if (user) {
-      channel = subscribeToWorkspaceChanges(() => {
-        refreshData();
-      });
+      channel = subscribeToWorkspaceChanges(requestRealtimeRefresh);
     }
 
     return () => {
+      if (realtimeRefreshTimerRef.current) {
+        clearTimeout(realtimeRefreshTimerRef.current);
+        realtimeRefreshTimerRef.current = null;
+      }
+
       if (channel) {
         supabase.removeChannel(channel);
       }
     };
-  }, [refreshData, user]);
+  }, [refreshData, requestRealtimeRefresh, user]);
 
   const activeStudentProfile = useMemo(() => {
     if (userRole === 'STUDENT') return studentProfile;
@@ -245,14 +268,20 @@ export const SIWESProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const addSupervisor = async (
     fullName: string,
+    email: string,
+    password: string,
     staffId: string,
+    faculty: string,
     department: string,
     designation: string,
     supervisorType: 'ACADEMIC' | 'INDUSTRY'
   ): Promise<void> => {
     await createSupervisorAccountRequest({
       fullName,
+      email,
+      password,
       staffId,
+      faculty,
       department,
       designation,
       supervisorType,

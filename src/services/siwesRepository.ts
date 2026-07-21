@@ -25,7 +25,6 @@ export interface AdminSupervisor extends DynamicSupervisorProfile {
 
 type ProfileRow = {
   id: string;
-  email: string;
   full_name: string;
   role: UserRole;
   created_at?: string;
@@ -46,6 +45,7 @@ type StudentProfileRow = {
 type SupervisorProfileRow = {
   user_id: string;
   staff_id: string | null;
+  faculty?: string | null;
   department: string | null;
   designation: string | null;
   supervisor_type?: 'ACADEMIC' | 'INDUSTRY' | null;
@@ -86,13 +86,12 @@ export async function ensureCurrentUserProfile(user: SupabaseUser): Promise<Prof
     .upsert(
       {
         id: user.id,
-        email: user.email || '',
         full_name: fullName,
         role,
       },
       { onConflict: 'id' }
     )
-    .select('id,email,full_name,role,created_at')
+    .select('id,full_name,role,created_at')
     .single();
 
   if (profileError) throw profileError;
@@ -122,7 +121,7 @@ export async function ensureCurrentUserProfile(user: SupabaseUser): Promise<Prof
 export async function loadStudentProfile(userId: string): Promise<DynamicStudentProfile | null> {
   const [{ data: profile, error: profileError }, { data: student, error: studentError }] =
     await Promise.all([
-      supabase.from('profiles').select('id,email,full_name,role,created_at').eq('id', userId).single(),
+      supabase.from('profiles').select('id,full_name,role,created_at').eq('id', userId).single(),
       supabase.from('student_profiles').select('*').eq('user_id', userId).maybeSingle(),
     ]);
 
@@ -136,7 +135,7 @@ export async function loadStudentProfile(userId: string): Promise<DynamicStudent
 export async function loadSupervisorProfile(userId: string): Promise<DynamicSupervisorProfile | null> {
   const [{ data: profile, error: profileError }, { data: supervisor, error: supervisorError }] =
     await Promise.all([
-      supabase.from('profiles').select('id,email,full_name,role,created_at').eq('id', userId).single(),
+      supabase.from('profiles').select('id,full_name,role,created_at').eq('id', userId).single(),
       supabase.from('supervisor_profiles').select('*').eq('user_id', userId).maybeSingle(),
     ]);
 
@@ -150,6 +149,7 @@ export async function loadSupervisorProfile(userId: string): Promise<DynamicSupe
     userId: supervisorRow.user_id,
     fullName: (profile as ProfileRow).full_name,
     staffId: supervisorRow.staff_id || '',
+    faculty: supervisorRow.faculty || undefined,
     department: supervisorRow.department || '',
     designation: supervisorRow.designation || '',
   };
@@ -168,7 +168,7 @@ export async function loadAssignedStudents(supervisorId: string): Promise<Dynami
   const userIds = studentRows.map((row) => (row as StudentProfileRow).user_id);
   const { data: profileRows, error: profilesError } = await supabase
     .from('profiles')
-    .select('id,email,full_name,role,created_at')
+    .select('id,full_name,role,created_at')
     .in('id', userIds);
 
   if (profilesError) throw profilesError;
@@ -179,7 +179,6 @@ export async function loadAssignedStudents(supervisorId: string): Promise<Dynami
       row as StudentProfileRow,
       profilesById.get((row as StudentProfileRow).user_id) || {
         id: (row as StudentProfileRow).user_id,
-        email: '',
         full_name: 'Unlisted Student',
         role: 'STUDENT',
       }
@@ -203,6 +202,7 @@ export async function loadAllSupervisors(): Promise<AdminSupervisor[]> {
   const { data: supervisorRows, error: supervisorsError } = await supabase
     .from('supervisor_profiles')
     .select('*')
+    .order('faculty', { ascending: true })
     .order('department', { ascending: true });
 
   if (supervisorsError) throw supervisorsError;
@@ -211,7 +211,7 @@ export async function loadAllSupervisors(): Promise<AdminSupervisor[]> {
   const userIds = supervisorRows.map((row) => (row as SupervisorProfileRow).user_id);
   const { data: profileRows, error: profilesError } = await supabase
     .from('profiles')
-    .select('id,email,full_name,role,created_at')
+    .select('id,full_name,role,created_at')
     .in('id', userIds);
 
   if (profilesError) throw profilesError;
@@ -225,6 +225,7 @@ export async function loadAllSupervisors(): Promise<AdminSupervisor[]> {
       userId: supervisor.user_id,
       fullName: profile?.full_name || 'Unlisted Supervisor',
       staffId: supervisor.staff_id || '',
+      faculty: supervisor.faculty || undefined,
       department: supervisor.department || '',
       designation: supervisor.designation || '',
       supervisorType: supervisor.supervisor_type || 'ACADEMIC',
@@ -243,7 +244,10 @@ export async function assignSupervisorToStudentRecord(studentId: string, supervi
 
 export async function createSupervisorAccountRequest(params: {
   fullName: string;
+  email: string;
+  password: string;
   staffId: string;
+  faculty: string;
   department: string;
   designation: string;
   supervisorType: 'ACADEMIC' | 'INDUSTRY';
@@ -266,7 +270,16 @@ export async function createSupervisorAccountRequest(params: {
   });
 
   if (!response.ok) {
-    throw new Error(`Supervisor provisioning failed with status ${response.status}.`);
+    let message = `Supervisor provisioning failed with status ${response.status}.`;
+    try {
+      const errorBody = await response.json();
+      if (typeof errorBody?.error === 'string') {
+        message = errorBody.error;
+      }
+    } catch {
+      // Keep the status-based message when the API does not return JSON.
+    }
+    throw new Error(message);
   }
 }
 
@@ -381,22 +394,28 @@ export async function createSupervisionSession(params: {
   return mapSupervisionSession(data as SupervisionSessionRow);
 }
 
+const SIWES_REALTIME_TABLES = [
+  'profiles',
+  'student_profiles',
+  'supervisor_profiles',
+  'logbook_entries',
+  'supervision_sessions',
+  'call_messages',
+] as const;
+
 export function subscribeToWorkspaceChanges(onChange: () => void) {
-  return supabase
-    .channel('siwes-workspace')
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, onChange)
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'student_profiles' }, onChange)
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'supervisor_profiles' }, onChange)
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'logbook_entries' }, onChange)
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'supervision_sessions' }, onChange)
-    .subscribe();
+  return SIWES_REALTIME_TABLES.reduce(
+    (channel, table) =>
+      channel.on('postgres_changes', { event: '*', schema: 'public', table }, onChange),
+    supabase.channel('siwes-workspace')
+  ).subscribe();
 }
 
 async function hydrateStudentProfiles(studentRows: StudentProfileRow[]): Promise<DynamicStudentProfile[]> {
   const userIds = studentRows.map((row) => row.user_id);
   const { data: profileRows, error: profilesError } = await supabase
     .from('profiles')
-    .select('id,email,full_name,role,created_at')
+    .select('id,full_name,role,created_at')
     .in('id', userIds);
 
   if (profilesError) throw profilesError;
@@ -407,7 +426,6 @@ async function hydrateStudentProfiles(studentRows: StudentProfileRow[]): Promise
       row,
       profilesById.get(row.user_id) || {
         id: row.user_id,
-        email: '',
         full_name: 'Unlisted Student',
         role: 'STUDENT',
       }

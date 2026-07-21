@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { StyleSheet, View, StatusBar, ActivityIndicator, SafeAreaView, Platform, Text, TouchableOpacity } from 'react-native';
 import { SIWESProvider, useSIWES } from './src/context/SIWESContext';
 import { AuthProvider, useAuth } from './src/context/AuthContext';
-import { Header } from './src/components/common/Header';
 import { AuthScreen } from './src/components/auth/AuthScreen';
 import { StudentTabNavigation } from './src/components/student/StudentTabNavigation';
 import { LogbookForm } from './src/components/student/LogbookForm';
@@ -64,9 +63,6 @@ const AppContent: React.FC = () => {
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#0f1511" />
       
-      {/* Top Header Navigation */}
-      <Header />
-
       {/* Main Screen Router Body */}
       <View style={styles.main}>
         {userRole === 'STUDENT' ? (
